@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+
+<html class="light" lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>BeeHealth AI - Traduza o Zumbido</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ffd900",
+                        "background-light": "#f8f8f5",
+                        "background-dark": "#23200f",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        .glass-nav {
+            background: rgba(248, 248, 245, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .glass-hero {
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 1.5rem 2rem 1rem 2rem;
+            border-radius: 1.25rem;
+        }
+
+        .mission-card {
+            position: relative;
+            overflow: hidden;
+            color: white;
+            border: none !important;
+        }
+
+        .mission-card .card-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center;
+            transition: transform 0.5s ease;
+            z-index: 0;
+        }
+
+        .mission-card:hover .card-bg {
+            transform: scale(1.1);
+        }
+
+        .mission-card .card-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.8) 100%);
+            z-index: 1;
+        }
+
+        .mission-card .card-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .text-accent-dark {
+            color: #b45309;
+        }
+
+        .footer-realistic {
+            position: relative;
+            background-image: url('footer_bg_realistic_1771809382457.png');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            overflow: hidden;
+        }
+
+        .footer-realistic::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(to bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.8) 100%);
+            z-index: 1;
+        }
+
+        .footer-realistic .container {
+            position: relative;
+            z-index: 2;
+        }
+
+        .honeycomb-pattern {
+            background-color: #ffffff;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%23f59e0b' stroke-width='1.5' stroke-opacity='0.5'/%3E%3C/svg%3E");
+            background-size: 56px 100px;
+            animation: honeycomb-vibrate 8s ease-in-out infinite;
+        }
+
+        @keyframes honeycomb-vibrate {
+            0% {
+                background-position: 0 0;
+            }
+
+            25% {
+                background-position: 6px 4px;
+            }
+
+            50% {
+                background-position: -4px 8px;
+            }
+
+            75% {
+                background-position: 8px -3px;
+            }
+
+            100% {
+                background-position: 0 0;
+            }
+        }
+
+        .video-docker video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: opacity 1.5s ease-in-out;
+        }
+    </style>
+</head>
+
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+    <!-- Translucent Navigation Bar -->
+    <nav class="fixed top-0 w-full z-50 glass-nav border-b border-primary/10">
+        <div class="max-w-7xl mx-auto px-6 h-12 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <h1 class="text-xl font-bold tracking-tight text-slate-900">BeeHealth <span
+                        class="text-primary-dark">IA</span></h1>
+            </div>
+            <div class="hidden md:flex items-center gap-10">
+                <a class="text-sm font-medium hover:text-primary transition-colors" href="#missao">A Nossa Missão</a>
+                <a class="text-sm font-medium hover:text-primary transition-colors" href="#tecnologia">Tecnologia</a>
+                <a class="text-sm font-medium hover:text-primary transition-colors" href="dashboard.html">Dashboard</a>
+                <a class="text-sm font-medium hover:text-primary transition-colors" href="map.html">Mapa</a>
+            </div>
+            <div class="flex items-center gap-4">
+                <button onclick="window.location.href='login.html'"
+                    class="px-5 py-2 text-sm font-bold hover:bg-slate-100 rounded-lg transition-all">Entrar</button>
+                <button onclick="window.location.href='signup.html'"
+                    class="bg-primary text-background-dark px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
+                    Cadastrar
+                </button>
+            </div>
+        </div>
+    </nav>
+    <!-- Hero Section -->
+    <header class="relative min-h-screen flex items-center pt-20 overflow-hidden">
+        <div class="absolute inset-0 z-0 video-docker overflow-hidden bg-slate-900">
+            <video id="bgVideo1" autoplay muted playsinline class="opacity-100">
+                <source src="videos/9153815-sd_960_506_30fps.mp4" type="video/mp4">
+            </video>
+            <video id="bgVideo2" muted playsinline class="opacity-0">
+                <source src="videos/4319652-hd_1280_720_30fps.mp4" type="video/mp4">
+            </video>
+        </div>
+        <div class="container ml-4 px-0 relative z-20">
+            <div class="max-w-[360px] glass-hero">
+                <div
+                    class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-primary/20 border border-primary/30 mb-4">
+                    <span class="flex h-1.5 w-1.5 rounded-full bg-primary animate-pulse"></span>
+                    <span class="text-[9px] font-bold uppercase tracking-widest text-primary">Bioacústica
+                        Avançada</span>
+                </div>
+                <h1 class="text-3xl md:text-4xl font-black leading-[1.1] text-white mb-3">
+                    Traduza o zumbido.<br />
+                    <span class="text-primary">Salve o enxame.</span>
+                </h1>
+                <p class="text-sm md:text-base text-slate-200 font-normal leading-relaxed mb-6">
+                    Monitoramento bioacústico avançado impulsionado por IA para identificar precocemente pragas e
+                    estresse na colmeia através da análise de som em tempo real.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <button onclick="window.location.href='dashboard.html'"
+                        class="flex items-center justify-center gap-2 bg-primary text-background-dark px-6 py-3 rounded-lg text-sm font-bold shadow-xl shadow-primary/30 hover:shadow-2xl hover:scale-[1.03] transition-all group">
+                        Começar Diagnóstico
+                        <span
+                            class="material-symbols-outlined text-base group-hover:translate-x-1 transition-transform">&#xe5c8;</span>
+                    </button>
+                    <button
+                        class="flex items-center justify-center gap-2 bg-white/10 backdrop-blur border border-white/20 text-white px-6 py-3 rounded-lg text-sm font-bold hover:bg-white/20 transition-all shadow-sm">
+                        Ver Demo
+                    </button>
+                </div>
+                <div class="mt-4 flex items-center gap-6 border-t border-white/10 pt-4 w-fit">
+                    <div class="flex -space-x-2">
+                        <img alt="Usuário" class="h-8 w-8 rounded-full border border-slate-800"
+                            data-alt="Foto de perfil circular pequena de uma pessoa"
+                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCY1SvH5abypkE6-JZzdnPSD0Ex2OKhvvxK_bzFvofHGYu4-QPpEukR32mLt28oyANqjxX3UuQL3hlJet_K1quAcptvMMfVnfdzJPydPrXImgCpzZuNOPnYsQLbnspc1k8fsZzuTmH1tjjjcAhLV15qXmTBxfAER_JsaY3B8uzNNfKNoaYdroTTLQV4wAUaqTaJxJRYZ0JCBHTTUjWnh2RdM1Bmq4IwyZ-PXX-7q4zNPeiu6J_65c3tz7cTtYpswuKtfUPVekfGOhisN" />
+                        <img alt="Usuário" class="h-8 w-8 rounded-full border border-slate-800"
+                            data-alt="Foto de perfil circular pequena de uma pessoa"
+                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAoelnWKAYuJl1FKIWFy6lMguyqwDhjxU15myeTC98UiRuRF-xUtXo5kXZS4nmYpa3xUIlqPeyuH0MIQZCpODuTbKOHZyD5KeppJ8kYbzwaiZb_FEILavWZBBylSUw6AF6odSwdt6I9qnOw7yGgJDdyZhG92uKVZKJwrFejwC3uQOf15eC-WWA8fkRqw8ka2rh94i3LUPtPdhJkSi28AbW4g9Aunrkcgh6dCi8I1R87DvjNyRC1cxDsgkB-yd54F_e075vvRVzXNMPh" />
+                        <img alt="Usuário" class="h-8 w-8 rounded-full border border-slate-800"
+                            data-alt="Foto de perfil circular pequena de uma pessoa"
+                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuCsr7NvABgR12q1kkN1e6AYhFN8Z7MHNoZDRMg9jY060VFavz7ID2npTAP8Y1xNyQRiRBPuxJILc972wOiQIE1bAjpjgELen-Po2pMuW1i3peCSKGSryT7gVcu89eOmwBcStJloAwjbYMZL5PGvS1L1F2cKw-x_8Mn7LRqg84bUqtGNiuL6u1nBpjqGRSwdndRr6eB2aMKsQUAgkh8yd_txJohnRCFNHsfJ46kaeXYjFbfWJj8CqQqm7Neh4axCKA7GpdWET62OMNtI" />
+                    </div>
+                    <p class="text-[10px] font-medium text-slate-300">
+                        <span class="text-white font-bold">450+</span> protegidos
+                    </p>
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- Mission Section -->
+    <section class="py-24 bg-white honeycomb-pattern" id="missao">
+        <div class="container mx-auto px-6">
+            <div class="flex flex-col items-center text-center max-w-3xl mx-auto mb-20">
+                <span class="text-accent-dark font-bold tracking-widest uppercase text-sm mb-4">A Nossa Missão</span>
+                <h2 class="text-4xl md:text-5xl font-bold text-slate-900 mb-6">Protegendo o ecossistema através da
+                    tecnologia</h2>
+                <p class="text-lg text-slate-600 leading-relaxed">
+                    O BeeHealth AI faz a ponte entre a natureza e os dados para garantir a sobrevivência das colmeias.
+                    Acreditamos que o monitoramento silencioso é o futuro da apicultura sustentável.
+                </p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="mission-card h-[400px] rounded-3xl transition-all group">
+                    <div class="card-bg" style="background-image: url('sustainability_bg_1771808504787.png')">
+                    </div>
+                    <div class="card-overlay"></div>
+                    <div class="card-content h-full flex flex-col justify-end p-10">
+                        <h3 class="text-xl font-bold mb-4 text-white">Sustentabilidade</h3>
+                        <p class="text-slate-200 leading-relaxed font-medium">Foco total no equilíbrio ambiental e na
+                            preservação da biodiversidade global.</p>
+                    </div>
+                </div>
+                <div class="mission-card h-[400px] rounded-3xl transition-all group">
+                    <div class="card-bg" style="background-image: url('innovation_bg_1771808520478.png')">
+                    </div>
+                    <div class="card-overlay"></div>
+                    <div class="card-content h-full flex flex-col justify-end p-10">
+                        <div
+                            class="w-14 h-14 bg-primary/40 rounded-2xl flex items-center justify-center mb-6 text-white backdrop-blur-sm border border-white/20">
+                            <span class="material-symbols-outlined text-3xl">&#xe322;</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-4 text-white">Inovação</h3>
+                        <p class="text-slate-200 leading-relaxed font-medium">Tecnologia de ponta em bioacústica e redes
+                            neurais para apicultura de precisão.</p>
+                    </div>
+                </div>
+                <div class="mission-card h-[400px] rounded-3xl transition-all group">
+                    <div class="card-bg" style="background-image: url('preservation_bg_1771808535981.png')">
+                    </div>
+                    <div class="card-overlay"></div>
+                    <div class="card-content h-full flex flex-col justify-end p-10">
+                        <div
+                            class="w-14 h-14 bg-primary/40 rounded-2xl flex items-center justify-center mb-6 text-white backdrop-blur-sm border border-white/20">
+                            <span class="material-symbols-outlined text-3xl">&#xe8e8;</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-4 text-white">Preservação</h3>
+                        <p class="text-slate-200 leading-relaxed font-medium">Proteção ativa das espécies através da
+                            detecção precoce de anomalias.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Technology Section -->
+    <section class="py-24 bg-white honeycomb-pattern" id="tecnologia">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+                <div class="relative">
+                    <div class="absolute -top-10 -left-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
+                    <div
+                        class="relative bg-white p-4 rounded-3xl shadow-2xl border border-white/50 overflow-hidden aspect-video">
+                        <video autoplay loop muted playsinline id="techVideo"
+                            class="rounded-2xl w-full h-full object-cover">
+                            <source src="videos/18069472-hd_1280_720_24fps.mp4" type="video/mp4">
+                        </video>
+
+                    </div>
+                </div>
+                <div>
+                    <span class="text-accent-dark font-bold tracking-widest uppercase text-sm mb-4">Tecnologia</span>
+                    <h2 class="text-4xl md:text-5xl font-bold text-slate-900 mb-8">Bioacústica Avançada &amp; IA</h2>
+                    <p class="text-lg text-slate-600 mb-10 leading-relaxed">
+                        Nossa inteligência artificial analisa padrões sonoros complexos em micro-frequências para
+                        entender o estado emocional e biológico das suas abelhas em tempo real.
+                    </p>
+                    <div class="space-y-8">
+                        <div class="flex gap-6">
+                            <div>
+                                <h4 class="text-lg font-bold mb-1">Análise Acústica</h4>
+                                <p class="text-slate-500">Captura de frequências sonoras ultra-precisas com microfones
+                                    de grau laboratorial.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-6">
+                            <div
+                                class="shrink-0 w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-[#b45309]">
+                                <span class="material-symbols-outlined">&#xe8ea;</span>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-1">IA de Ponta</h4>
+                                <p class="text-slate-500">Reconhecimento instantâneo de padrões de estresse,
+                                    enxameamento e doenças.</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-6">
+                            <div
+                                class="shrink-0 w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-[#b45309]">
+                                <span class="material-symbols-outlined">&#xe8e1;</span>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-bold mb-1">Alertas em Tempo Real</h4>
+                                <p class="text-slate-500">Notificações preditivas enviadas diretamente para o seu
+                                    dispositivo móvel.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- Footer -->
+    <footer class="footer-realistic py-6 border-t border-white/10">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-12 mb-4">
+                <div class="col-span-1 md:col-span-2">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="bg-primary p-1 rounded-lg">
+                            <span
+                                class="material-symbols-outlined text-background-dark text-lg font-bold">&#xe3f7;</span>
+                        </div>
+                        <h2 class="text-xl font-bold text-white">BeeHealth AI</h2>
+                    </div>
+                    <p class="text-slate-200 max-w-sm text-xs leading-relaxed mb-4">
+                        Liderando a revolução tecnológica na preservação das abelhas. Juntos, garantimos o futuro da
+                        polinização global.
+                    </p>
+                    <div class="flex gap-4">
+                        <a class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-primary transition-all scale-90"
+                            href="#"><span class="material-symbols-outlined text-sm">&#xe80d;</span></a>
+                        <a class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-primary transition-all scale-90"
+                            href="#"><span class="material-symbols-outlined text-sm">&#xe158;</span></a>
+                        <a class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-primary transition-all scale-90"
+                            href="#"><span class="material-symbols-outlined text-sm">&#xe0bf;</span></a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4 text-white text-sm">Plataforma</h4>
+                    <ul class="space-y-2 text-slate-300 text-xs">
+                        <li><a class="hover:text-primary transition-colors" href="#">Tecnologia</a></li>
+                        <li><a class="hover:text-primary transition-colors" href="#">Dashboards</a></li>
+                        <li><a class="hover:text-primary transition-colors" href="#">Segurança</a></li>
+                        <li><a class="hover:text-primary transition-colors" href="#">API</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4 text-white text-sm">Empresa</h4>
+                    <ul class="space-y-2 text-slate-300 text-xs">
+                        <li><a class="hover:text-primary transition-colors" href="#">Sobre Nós</a></li>
+                        <li><a class="hover:text-primary transition-colors" href="#">Carreiras</a></li>
+                        <li><a class="hover:text-primary transition-colors" href="#">Blog</a></li>
+                        <li><a class="hover:text-primary transition-colors" href="#">Contato</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-white/10 pt-2 flex flex-col md:row items-center justify-between gap-4">
+                <p class="text-slate-400 text-xs">© 2024 BeeHealth AI. Todos os direitos reservados.</p>
+                <div class="flex gap-8 text-xs text-slate-400">
+                    <a class="hover:text-white" href="#">Privacidade</a>
+                    <a class="hover:text-white" href="#">Termos de Uso</a>
+                    <a class="hover:text-white" href="#">Cookies</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script>
+        const videos = [
+            document.getElementById('bgVideo1'),
+            document.getElementById('bgVideo2')
+        ];
+
+        const techVideo = document.getElementById('techVideo');
+        if (techVideo) techVideo.playbackRate = 2.0;
+
+        let currentIndex = 0;
+        let transitioning = false;
+
+        // Configura todos os vídeos da playlist principal
+        videos.forEach(v => {
+            if (v) {
+                v.playbackRate = 2.0;
+                v.ontimeupdate = () => {
+                    if (!transitioning && v.duration - v.currentTime < 2) {
+                        playNext();
+                    }
+                };
+            }
+        });
+
+        function playNext() {
+            if (transitioning) return;
+            transitioning = true;
+
+            const current = videos[currentIndex];
+            currentIndex = (currentIndex + 1) % videos.length;
+            const next = videos[currentIndex];
+
+            next.currentTime = 0;
+            next.play().then(() => {
+                next.classList.replace('opacity-0', 'opacity-100');
+                current.classList.replace('opacity-100', 'opacity-0');
+
+                setTimeout(() => {
+                    current.pause();
+                    transitioning = false;
+                }, 1500);
+            });
+        }
+
+        // Sistema Keep-Alive (Para evitar hibernação em alguns browsers)
+        function keepAlive() {
+            fetch(window.location.href).then(() => console.log("Keep-alive ping sent"));
+            setTimeout(keepAlive, 5 * 60 * 1000); // Ping a cada 5 minutos
+        }
+        keepAlive();
+    </script>
+</body>
+
+</html>

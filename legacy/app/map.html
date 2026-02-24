@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="pt-pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BeeHealth IA - Mapa Comunitário</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+
+        :root {
+            --primary: #ffd900;
+            --primary-dark: #b45309;
+            --secondary: #0f172a;
+            --success: #059669;
+            --error: #b91c1c;
+            --warning: #b45309;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f8f8f5;
+        }
+
+        .honeycomb-pattern {
+            background-color: #f8f8f5;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%23f59e0b' stroke-width='1.5' stroke-opacity='0.4'/%3E%3C/svg%3E");
+            background-size: 56px 100px;
+            animation: honeycomb-vibrate 8s ease-in-out infinite;
+        }
+
+        @keyframes honeycomb-vibrate {
+            0% {
+                background-position: 0 0;
+            }
+
+            25% {
+                background-position: 6px 4px;
+            }
+
+            50% {
+                background-position: -4px 8px;
+            }
+
+            75% {
+                background-position: 8px -3px;
+            }
+
+            100% {
+                background-position: 0 0;
+            }
+        }
+
+        .sidebar-premium {
+            background: rgba(248, 248, 245, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .glass {
+            background: rgba(0, 0, 0, 0.1) !important;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        .leaflet-container {
+            background: #f1f3f0 !important;
+        }
+
+        .custom-div-icon {
+            background: none;
+            border: none;
+        }
+
+        .marker-pin {
+            width: 32px;
+            height: 32px;
+            border-radius: 50% 50% 50% 0;
+            background: var(--primary-dark);
+            position: absolute;
+            transform: rotate(-45deg);
+            left: 50%;
+            top: 50%;
+            margin: -16px 0 0 -16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .marker-pin i {
+            transform: rotate(45deg);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .marker-pin.success {
+            background: var(--success);
+        }
+
+        .marker-pin.success i {
+            color: white;
+        }
+
+        .marker-pin.error {
+            background: var(--error);
+        }
+
+        .marker-pin.error i {
+            color: white;
+        }
+
+        .marker-pin.warning {
+            background: var(--warning);
+        }
+
+        .custom-leaflet-popup .leaflet-popup-content-wrapper {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border-radius: 16px;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .custom-leaflet-popup .leaflet-popup-content {
+            margin: 0;
+            width: auto !important;
+        }
+
+        .custom-leaflet-popup .leaflet-popup-tip {
+            background: white;
+        }
+
+        #layer-menu {
+            display: none;
+        }
+
+        #layer-menu.active {
+            display: flex;
+        }
+
+        .province-label {
+            background: rgba(255, 255, 255, 0.8) !important;
+            border: 1px solid rgba(0, 0, 0, 0.1) !important;
+            border-radius: 4px !important;
+            padding: 2px 6px !important;
+            font-size: 10px !important;
+            font-weight: 700 !important;
+            color: #23200f !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+        }
+    </style>
+</head>
+
+<body class="h-screen overflow-hidden flex flex-col honeycomb-pattern">
+    <!-- Navigation Bar -->
+    <nav class="glass border-b border-slate-200 px-8 py-2 flex items-center justify-between z-50">
+        <div class="flex items-center gap-6 cursor-pointer" onclick="window.location.href='index.html'">
+            <div class="flex flex-col">
+                <h1 class="font-black text-slate-900 leading-none text-xl">BeeHealth <span
+                        class="text-primary-dark">IA</span></h1>
+                <div class="relative inline-block mt-2">
+                    <p class="text-[10px] text-slate-800 font-black uppercase tracking-[0.2em] leading-none mb-1">Rede
+                        Comunitária</p>
+                    <div class="absolute -bottom-1 left-0 w-full h-2 bg-primary/30 rounded-full -z-10"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <div
+                class="hidden md:flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-md rounded-full border border-slate-200 shadow-sm focus-within:border-primary-dark transition-all">
+                <span class="material-symbols-outlined text-sm text-slate-400">&#xe8b6;</span>
+                <input type="text" placeholder="Procurar apiários..."
+                    class="bg-transparent border-none outline-none text-xs w-48 font-bold text-slate-900 placeholder:text-slate-400">
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex-1 flex overflow-hidden relative">
+
+        <!-- Main Map Area -->
+        <main class="flex-1 relative bg-[#f1f3f0]">
+            <!-- Actual Map Div -->
+            <div id="map"></div>
+
+            <!-- Map Stats Overlay -->
+            <div class="absolute bottom-6 left-6 z-30 flex gap-4">
+                <div
+                    class="bg-white/90 backdrop-blur-2xl p-6 rounded-[2.5rem] shadow-2xl border border-white/50 flex items-center gap-10 px-10">
+                    <div class="flex items-center gap-3 border-r border-slate-200/50 pr-8">
+                        <div>
+                            <p
+                                class="text-[10px] text-primary-dark font-black uppercase tracking-widest leading-none mb-2">
+                                Hubs Ativos</p>
+                            <h3 class="text-2xl font-black text-slate-900 leading-none">128</h3>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div>
+                            <p
+                                class="text-[10px] text-primary-dark font-black uppercase tracking-widest leading-none mb-2">
+                                Saúde Média</p>
+                            <h3 class="text-2xl font-black text-slate-900 leading-none">84%</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Legend Sidebar -->
+            <aside
+                class="absolute right-6 top-6 bottom-6 w-80 glass z-20 rounded-3xl shadow-2xl border border-white/50 flex flex-col overflow-hidden hidden">
+                <div class="p-6 border-b border-slate-200">
+                    <h3 class="font-bold text-slate-900">Map Intelligence</h3>
+                    <p class="text-xs text-slate-500">Real-time health monitoring across Angola</p>
+                </div>
+                <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                    <!-- Status Filter -->
+                    <div>
+                        <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Estado do
+                            Apiário
+                        </h4>
+                        <div
+                            class="flex items-center justify-between p-3 rounded-xl bg-white/50 border border-white shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <span class="size-2 rounded-full bg-primary-dark"></span>
+                                <span class="text-xs font-bold text-slate-700">Stressed</span>
+                            </div>
+                            <span class="text-xs font-bold text-slate-400">31</span>
+                        </div>
+                        <div
+                            class="flex items-center justify-between p-3 rounded-xl bg-white/50 border border-white shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <span class="size-2 rounded-full bg-success"></span>
+                                <span class="text-xs font-bold text-slate-700">Saudável</span>
+                            </div>
+                            <span class="text-xs font-bold text-slate-400">15</span>
+                        </div>
+                        <div
+                            class="flex items-center justify-between p-3 rounded-xl bg-white/50 border border-white shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <span class="size-2 rounded-full bg-error"></span>
+                                <span class="text-xs font-bold text-slate-700">Crítico</span>
+                            </div>
+                            <span class="text-xs font-bold text-slate-400">15</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Activity Stats -->
+                <div>
+                    <h4 class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Tendência de
+                        Atividade
+                        (7 Dias)</h4>
+                    <div class="p-4 bg-slate-900 rounded-2xl shadow-inner border border-slate-800">
+                        <div class="flex items-end justify-between h-20 gap-1 px-1">
+                            <div class="flex-1 bg-white/10 h-[40%] rounded-t-sm"></div>
+                            <div class="flex-1 bg-white/10 h-[60%] rounded-t-sm"></div>
+                            <div class="flex-1 bg-primary-dark/40 h-[80%] rounded-t-sm"></div>
+                            <div class="flex-1 bg-white/10 h-[50%] rounded-t-sm"></div>
+                            <div class="flex-1 bg-primary-dark/60 h-[90%] rounded-t-sm"></div>
+                            <div
+                                class="flex-1 bg-primary-dark h-[100%] rounded-t-sm shadow-[0_-4px_10px_rgba(180,83,9,0.3)]">
+                            </div>
+                            <div class="flex-1 bg-white/10 h-[70%] rounded-t-sm"></div>
+                        </div>
+                        <div class="flex justify-between mt-2 px-1">
+                            <span class="text-[8px] text-slate-500 font-bold">SEG</span>
+                            <span class="text-[8px] text-primary-dark font-bold tracking-tighter">HOJE</span>
+                            <span class="text-[8px] text-slate-500 font-bold">DOM</span>
+                        </div>
+                    </div>
+                </div>
+    </div>
+    </aside>
+    </main>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Define map layers
+        const lightMode = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19
+        });
+
+        const satelliteMode = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19,
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        });
+
+        const satelliteLabels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+            maxZoom: 19
+        });
+
+        const satelliteHybrid = L.layerGroup([satelliteMode, satelliteLabels]);
+
+        const streetMode = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        });
+
+        // Initialize map
+        const map = L.map('map', {
+            zoomControl: false,
+            attributionControl: false,
+            layers: [satelliteHybrid],
+            maxZoom: 17,
+            minZoom: 3
+        }).setView([-8.839988, 13.289437], 6); // Centered on Angola/Luanda
+
+        // Add Layer Control
+        const baseMaps = {
+            "Mapa de Luz": lightMode,
+            "Satélite": satelliteHybrid,
+            "Ruas": streetMode
+        };
+
+        const layerControl = L.control.layers(baseMaps, null, {
+            position: 'topright',
+            collapsed: true
+        }).addTo(map);
+
+        // Styling for Angola Border
+        const angolaStyle = {
+            "color": "#ffd900", // Yellow border
+            "weight": 3,
+            "opacity": 0.8,
+            "fillOpacity": 0.05,
+            "fillColor": "#ffd900"
+        };
+
+        // Fetch and Add Angola Borders (Provinces - ADM1)
+        fetch('https://github.com/wmgeolab/geoBoundaries/raw/9469f09/releaseData/gbOpen/AGO/ADM1/geoBoundaries-AGO-ADM1_simplified.geojson')
+            .then(response => response.json())
+            .then(data => {
+                L.geoJSON(data, {
+                    style: angolaStyle,
+                    onEachFeature: function (feature, layer) {
+                        if (feature.properties && feature.properties.shapeName) {
+                            layer.bindTooltip(feature.properties.shapeName, {
+                                permanent: false,
+                                direction: "center",
+                                className: "province-label"
+                            });
+                        }
+                    }
+                }).addTo(map);
+            })
+            .catch(err => console.error("Error loading Angola Provinces GeoJSON:", err));
+
+        // Custom Icon Function
+        function createIcon(type, icon) {
+            return L.divIcon({
+                className: 'custom-div-icon',
+                html: `<div class='marker-pin ${type}'><i class='material-symbols-outlined'>${icon}</i></div>`,
+                iconSize: [30, 42],
+                iconAnchor: [15, 42]
+            });
+        }
+
+        // Add real interactive markers
+        const hubs = [
+            { lat: -8.839988, lng: 13.289437, name: "Apiário de Luanda", status: "success", icon: "check", score: 98 },
+            { lat: -12.35, lng: 13.53, name: "Farma Benguela Central", status: "warning", icon: "warning", score: 65 },
+            { lat: -14.91, lng: 13.49, name: "Lubango Wild Project", status: "error", icon: "priority_high", score: 12 },
+            { lat: -9.33, lng: 20.39, name: "Saurimo Honey Base", status: "success", icon: "check", score: 92 }
+        ];
+
+        hubs.forEach(hub => {
+            const marker = L.marker([hub.lat, hub.lng], { icon: createIcon(hub.status, hub.icon) }).addTo(map);
+
+            // Custom popup content
+            const popupContent = `
+                <div class="p-2 w-64">
+                    <h3 class="font-bold text-slate-900 text-sm mb-2">${hub.name}</h3>
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="size-2 rounded-full bg-${hub.status === 'warning' ? 'primary' : hub.status === 'error' ? 'red-500' : 'success'}"></span>
+                        <span class="text-xs text-slate-600 font-medium">${hub.status === 'success' ? 'Saudável' : hub.status === 'warning' ? 'Em Estresse' : 'Crítico'}</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden mb-1">
+                        <div class="bg-${hub.status === 'warning' ? 'primary' : hub.status === 'error' ? 'red-500' : 'success'} h-full" style="width: ${hub.score}%"></div>
+                    </div>
+                    <div class="flex justify-between items-center mb-3">
+                        <span class="text-[10px] font-bold text-slate-500 uppercase">Health Score</span>
+                        <span class="text-[10px] font-bold text-${hub.status === 'warning' ? 'slate-900' : hub.status === 'error' ? 'red-500' : 'success'}">${hub.score}/100</span>
+                    </div>
+                    <button onclick="window.location.href='dashboard.html'" class="w-full py-2 bg-primary text-slate-900 rounded-lg text-xs font-bold hover:brightness-105 transition-all shadow-sm">
+                        Ver Detalhes Completos
+                    </button>
+                </div>
+            `;
+
+            marker.bindPopup(popupContent, {
+                maxWidth: 300,
+                className: 'custom-leaflet-popup'
+            });
+        });
+
+        // Handle Manual Controls
+        let currentModeIndex = 1; // Padrão Satélite Híbrido
+        const modes = [lightMode, satelliteHybrid, streetMode];
+
+        window.changeMapMode = (index) => {
+            // Remove current layer
+            map.removeLayer(modes[currentModeIndex]);
+            // Update index
+            currentModeIndex = index;
+            // Add new layer
+            map.addLayer(modes[currentModeIndex]);
+
+            // UI Updates (Visual selection mark)
+            document.querySelectorAll('#layer-menu button').forEach((btn, i) => {
+                if (i === index) btn.classList.add('bg-primary/20');
+                else btn.classList.remove('bg-primary/20');
+            });
+
+            // Close menu
+            document.getElementById('layer-menu').classList.remove('active');
+        };
+
+        document.querySelectorAll('button').forEach(btn => {
+            const icon = btn.querySelector('.material-symbols-outlined')?.innerText.trim();
+            if (icon === 'add') btn.onclick = () => map.zoomIn();
+            if (icon === 'remove') btn.onclick = () => map.zoomOut();
+            if (icon === 'my_location') btn.onclick = () => map.setView([-8.839988, 13.289437], 12);
+
+            if (icon === 'layers') {
+                btn.onclick = (e) => {
+                    e.stopPropagation();
+                    document.getElementById('layer-menu').classList.toggle('active');
+                };
+            }
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', () => {
+            document.getElementById('layer-menu').classList.remove('active');
+        });
+
+        document.getElementById('layer-menu').onclick = (e) => e.stopPropagation();
+    </script>
+</body>
+
+</html>

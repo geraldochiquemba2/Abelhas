@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+
+<html lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BeeHealth AI - Acoustic Analysis Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ffd900",
+                        "background-light": "#f8f8f5",
+                        "background-dark": "#23200f",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: "Space Grotesk", sans-serif;
+        }
+        .spectrogram-gradient {
+            background: linear-gradient(to top, #e2e8f0 0%, #fef3c7 40%, #fbbf24 70%, #d97706 100%);
+        }
+        .glass-insight {
+            background: rgba(255, 217, 0, 0.08);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 217, 0, 0.2);
+        }
+        .heatmap-cell {
+            background: linear-gradient(135deg, rgba(255, 217, 0, 0.1) 0%, rgba(255, 217, 0, 0.4) 100%);
+        }
+    </style>
+</head>
+<body class="bg-background-light text-slate-900 min-h-screen">
+<div class="layout-container flex flex-col h-screen overflow-hidden">
+<header class="flex items-center justify-between px-8 py-4 bg-white border-b border-slate-200">
+<div class="flex items-center gap-3">
+<div class="p-2 bg-primary rounded-lg">
+<span class="material-symbols-outlined text-slate-900 text-2xl font-bold">hive</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight text-slate-900">BeeHealth AI</h1>
+<p class="text-[10px] uppercase tracking-widest text-slate-500 font-semibold">Clinical Diagnostics</p>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<nav class="hidden lg:flex items-center gap-8">
+<a class="text-sm font-semibold text-slate-900 border-b-2 border-primary pb-1" href="#">Dashboard</a>
+<a class="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors" href="#">Analytics</a>
+<a class="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors" href="#">Reports</a>
+<a class="text-sm font-medium text-slate-500 hover:text-slate-900 transition-colors" href="#">Archive</a>
+</nav>
+<div class="h-8 w-[1px] bg-slate-200 mx-2"></div>
+<div class="flex items-center gap-3">
+<div class="relative group">
+<button class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-lg transition-all border border-slate-200">
+<span class="text-sm font-bold text-slate-900">BH-092 Alpha</span>
+<span class="material-symbols-outlined text-slate-500">expand_more</span>
+</button>
+</div>
+<button class="p-2 text-slate-500 hover:bg-slate-100 rounded-full transition-colors relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+</button>
+<div class="w-10 h-10 rounded-full bg-slate-200 border border-slate-300 overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="Professional headshot of a lab technician" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsf2QpByDYdR8w9PYRcz6HiUhRUjGPajQMp6Bw6uWw-A4fX-9mPvpNPrbPFaMo9e2Kr8HBBStsuEB2IEt_rr0nakHnXlOPMuegtGdk5T8VZxFPCG9RPEsfR7NGVg8NvptNU555CQ-b4xa3QWNXmPewWdXM547QfsRg_yzowBFlqcgMCRSNQDHYlb-lR8qttNNMG3k5BHBCiEi6m3U1PARFU0ocYsq4-TJiQkkYgxo14Of7VUdtHKnHNHlmCSRwtg9XxCdWQs_-LaSd"/>
+</div>
+</div>
+</div>
+</header>
+<main class="flex flex-1 overflow-hidden">
+<aside class="w-16 border-r border-slate-200 bg-white flex flex-col items-center py-6 gap-6">
+<button class="p-2 bg-primary/20 text-slate-900 rounded-lg" title="Acoustic Analysis">
+<span class="material-symbols-outlined">equalizer</span>
+</button>
+<button class="p-2 text-slate-400 hover:bg-slate-50 rounded-lg" title="Thermal View">
+<span class="material-symbols-outlined">thermostat</span>
+</button>
+<button class="p-2 text-slate-400 hover:bg-slate-50 rounded-lg" title="Historical Data">
+<span class="material-symbols-outlined">history</span>
+</button>
+<div class="mt-auto flex flex-col gap-6">
+<button class="p-2 text-slate-400 hover:bg-slate-50 rounded-lg">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-2 text-slate-400 hover:bg-slate-50 rounded-lg">
+<span class="material-symbols-outlined">help</span>
+</button>
+</div>
+</aside>
+<div class="flex-1 overflow-y-auto p-8 space-y-6 bg-background-light">
+<div class="flex items-end justify-between">
+<div>
+<nav class="flex gap-2 text-xs font-medium text-slate-400 mb-2">
+<span>Hives</span>
+<span>/</span>
+<span class="text-slate-600">BH-092 Alpha</span>
+</nav>
+<h2 class="text-3xl font-bold text-slate-900 tracking-tight">Acoustic Analysis Dashboard</h2>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-lg font-semibold text-sm hover:shadow-sm transition-all">
+<span class="material-symbols-outlined text-lg">download</span>
+                            Export Data
+                        </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-primary rounded-lg font-bold text-sm text-slate-900 shadow-sm hover:shadow-md transition-all">
+<span class="material-symbols-outlined text-lg">p2p</span>
+                            Live Feed
+                        </button>
+</div>
+</div>
+<div class="grid grid-cols-12 gap-6">
+<div class="col-span-12 lg:col-span-8 space-y-6">
+<div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
+<div class="flex items-center justify-between mb-6">
+<h3 class="font-bold text-slate-900 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">analytics</span>
+                                    Real-time Acoustic Spectrogram
+                                </h3>
+<div class="flex items-center gap-4 text-xs font-bold uppercase tracking-wider text-slate-400">
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-slate-300"></span> 0 Hz</span>
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-primary"></span> 8k Hz</span>
+</div>
+</div>
+<div class="relative w-full h-[400px] bg-slate-50 rounded-lg overflow-hidden border border-slate-100 flex items-end">
+<div class="absolute inset-0 grid grid-cols-12 grid-rows-6 opacity-20 pointer-events-none">
+<div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-b border-slate-400"></div>
+<div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-b border-slate-400"></div>
+<div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-b border-slate-400"></div>
+<div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-b border-slate-400"></div>
+<div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-r border-b border-slate-400"></div><div class="border-b border-slate-400"></div>
+<div class="border-r border-slate-400"></div><div class="border-r border-slate-400"></div><div class="border-r border-slate-400"></div><div class="border-r border-slate-400"></div><div class="border-r border-slate-400"></div><div class="border-r border-slate-400"></div><div class="border-r border-slate-400"></div><div class="border-r border-slate-400"></div><div class="border-r border-slate-400"></div><div class="border-r border-slate-400"></div><div class="border-r border-slate-400"></div><div></div>
+</div>
+<div class="w-full flex items-end gap-[2px] px-2 h-full">
+<div class="flex-1 bg-primary/20 h-[30%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/30 h-[45%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/40 h-[60%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/50 h-[80%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary h-[95%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/90 h-[70%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/70 h-[50%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/40 h-[40%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/20 h-[35%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/50 h-[65%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary h-[85%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/80 h-[92%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/60 h-[75%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/30 h-[45%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/20 h-[30%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/40 h-[55%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary h-[78%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary h-[88%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/90 h-[96%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/70 h-[82%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/40 h-[60%] rounded-t-sm"></div>
+<div class="flex-1 bg-primary/20 h-[40%] rounded-t-sm"></div>
+</div>
+<div class="absolute top-4 left-4 flex flex-col gap-1">
+<span class="text-[10px] font-bold text-slate-400">GAIN: +12dB</span>
+<span class="text-[10px] font-bold text-slate-400">SAMPLE: 44.1kHz</span>
+</div>
+</div>
+<div class="mt-4 flex items-center justify-between text-xs font-medium text-slate-500">
+<span>0s</span>
+<span>2.5s</span>
+<span>5.0s</span>
+<span>7.5s</span>
+<span>10s</span>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-6">
+<div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-bold uppercase tracking-wider text-slate-400">Internal Temp</span>
+<span class="material-symbols-outlined text-orange-400">device_thermostat</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold text-slate-900">34.5°C</span>
+<span class="text-xs font-semibold text-green-500 flex items-center">
+<span class="material-symbols-outlined text-sm">arrow_upward</span> 0.2
+                                    </span>
+</div>
+<div class="mt-4 h-12 w-full flex items-end gap-1">
+<div class="w-full bg-slate-100 h-6 rounded-sm"></div>
+<div class="w-full bg-slate-100 h-8 rounded-sm"></div>
+<div class="w-full bg-slate-100 h-7 rounded-sm"></div>
+<div class="w-full bg-primary/40 h-10 rounded-sm"></div>
+<div class="w-full bg-primary/60 h-11 rounded-sm"></div>
+<div class="w-full bg-primary h-9 rounded-sm"></div>
+</div>
+</div>
+<div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-bold uppercase tracking-wider text-slate-400">Humidity</span>
+<span class="material-symbols-outlined text-blue-400">humidity_percentage</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-3xl font-bold text-slate-900">62%</span>
+<span class="text-xs font-semibold text-slate-400 flex items-center">
+<span class="material-symbols-outlined text-sm">horizontal_rule</span> stable
+                                    </span>
+</div>
+<div class="mt-4 h-12 w-full flex items-end gap-1">
+<div class="w-full bg-slate-100 h-9 rounded-sm"></div>
+<div class="w-full bg-slate-100 h-8 rounded-sm"></div>
+<div class="w-full bg-slate-100 h-10 rounded-sm"></div>
+<div class="w-full bg-primary/40 h-8 rounded-sm"></div>
+<div class="w-full bg-primary/60 h-7 rounded-sm"></div>
+<div class="w-full bg-primary h-8 rounded-sm"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="col-span-12 lg:col-span-4 space-y-6">
+<div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden">
+<div class="absolute -right-4 -top-4 w-24 h-24 opacity-10">
+<span class="material-symbols-outlined text-8xl text-primary">allergies</span>
+</div>
+<h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Health Status</h3>
+<div class="flex items-center gap-4">
+<div class="size-16 rounded-full bg-primary/20 flex items-center justify-center animate-pulse">
+<span class="material-symbols-outlined text-primary text-4xl font-bold">chess_queen</span>
+</div>
+<div>
+<div class="text-2xl font-black text-slate-900">Saudável</div>
+<div class="text-sm font-semibold text-green-600 flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">verified</span>
+                                        98% Confidence
+                                    </div>
+</div>
+</div>
+</div>
+<div class="glass-insight p-6 rounded-xl space-y-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-slate-900">smart_toy</span>
+<h3 class="font-bold text-slate-900">AI Diagnostic Insight</h3>
+</div>
+<p class="text-sm leading-relaxed text-slate-700 font-medium">
+                                Colony frequency patterns are stable. <span class="text-slate-900 font-bold underline decoration-primary decoration-2">Queen presence confirmed</span> by high-frequency acoustic signature (240-260Hz range). No signs of swarming behavior detected in current cycle.
+                            </p>
+<div class="pt-2 border-t border-primary/20">
+<button class="w-full py-2 text-xs font-bold uppercase tracking-widest text-slate-900 flex items-center justify-center gap-2 hover:bg-primary/20 rounded-lg transition-all">
+                                    View Full Report
+                                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</div>
+<div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+<h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4">Active Events</h3>
+<div class="space-y-4">
+<div class="flex gap-3">
+<div class="size-2 mt-1.5 rounded-full bg-primary"></div>
+<div>
+<p class="text-sm font-bold text-slate-900">Frequency Spike Detected</p>
+<p class="text-xs text-slate-500">14:23 • Calibration needed</p>
+</div>
+</div>
+<div class="flex gap-3">
+<div class="size-2 mt-1.5 rounded-full bg-green-500"></div>
+<div>
+<p class="text-sm font-bold text-slate-900">Queen Status Verified</p>
+<p class="text-xs text-slate-500">12:00 • Acoustic Match</p>
+</div>
+</div>
+<div class="flex gap-3 opacity-50">
+<div class="size-2 mt-1.5 rounded-full bg-slate-300"></div>
+<div>
+<p class="text-sm font-bold text-slate-900">Environmental Sync</p>
+<p class="text-xs text-slate-500">09:15 • Completed</p>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-slate-900 p-6 rounded-xl shadow-xl shadow-primary/10 text-white">
+<div class="flex items-center justify-between mb-4">
+<div class="flex flex-col">
+<span class="text-[10px] font-bold text-primary uppercase">Current Hive Location</span>
+<span class="text-sm font-bold">Santa Catarina, BR</span>
+</div>
+<span class="material-symbols-outlined text-primary">location_on</span>
+</div>
+<div class="h-32 rounded-lg overflow-hidden grayscale brightness-125 border border-white/10">
+<img alt="Hive Location Map" class="w-full h-full object-cover" data-alt="Top down aerial view of a farm in Santa Catarina" data-location="Santa Catarina, Brazil" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUmpiJk24uf8GWiksjA_OxvKCDNW0l3y0sw8IACNliaQJurR4WSQguU5l6enpKsLPrC2-LNEGIN_xUt0kVdiJcES4uv-874KzgQk7JfqJPi58EVhRFV_wI4ustCGhma4SQ_W0rU1txVXo4gqqItg7Bcx22z0_RYj19Nu4OQjo7wN7TMAGWAw-NNggrVS4EWbxiLU36fZ4p5PFRQivMAG9Sjm_JCYfTcfdJdYBQf60s1gnRQ7ovO1Lsar228ztVf2iJc2VR9Dx2Aksc"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

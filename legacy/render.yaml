@@ -1,0 +1,6 @@
+services:
+  - type: static
+    name: abelhas
+    env: static
+    buildCommand: null
+    publishPath: app

@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>BeeHealth IA - Análise da Inteligência Artificial</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ffd900",
+                        "primary-dark": "#b45309",
+                        "glass": "rgba(255, 255, 255, 0.1)",
+                        "glass-border": "rgba(255, 255, 255, 0.2)",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: "Space Grotesk", sans-serif;
+            background: #f8f8f5;
+            color: #0f172a;
+            overflow: hidden;
+        }
+
+        .honeycomb-pattern {
+            background-color: #f8f8f5;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%23f59e0b' stroke-width='1.5' stroke-opacity='0.4'/%3E%3C/svg%3E");
+            background-size: 56px 100px;
+            animation: honeycomb-vibrate 8s ease-in-out infinite;
+        }
+
+        @keyframes honeycomb-vibrate {
+            0% {
+                background-position: 0 0;
+            }
+
+            25% {
+                background-position: 6px 4px;
+            }
+
+            50% {
+                background-position: -4px 8px;
+            }
+
+            75% {
+                background-position: 8px -3px;
+            }
+
+            100% {
+                background-position: 0 0;
+            }
+        }
+
+
+        .glass-card {
+            background: rgba(0, 0, 0, 0.1) !important;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+        }
+
+        .sidebar-premium {
+            background: rgba(248, 248, 245, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .neon-glow {
+            text-shadow: 0 0 10px rgba(255, 217, 0, 0.5);
+        }
+
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+
+            100% {
+                transform: translateY(0px);
+            }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 217, 0, 0.2);
+            border-radius: 10px;
+        }
+
+        /* Animação de Ondas de Áudio (Estilo iPhone Rolável) */
+        .audio-wave {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            height: 60px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 1rem;
+            width: 300px;
+            overflow-x: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #ef4444 transparent;
+            scroll-behavior: smooth;
+        }
+
+        .audio-wave::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .audio-wave::-webkit-scrollbar-thumb {
+            background: #ef4444;
+            border-radius: 10px;
+        }
+
+        .wave-bar {
+            width: 2px;
+            height: 2px;
+            background: #ef4444;
+            border-radius: 1px;
+            transition: height 0.05s ease;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex honeycomb-pattern text-slate-900 font-display">
+
+    <!-- Sidebar Lateral Premium -->
+    <aside
+        class="w-64 sidebar-premium h-screen flex flex-col py-8 z-10 transition-all duration-300 border-r border-primary-dark/30">
+        <div class="px-8 mb-12 flex items-center gap-3 group cursor-pointer"
+            onclick="window.location.href='index.html'">
+            <span class="text-xl font-black tracking-tighter text-slate-900">BeeHealth<span
+                    class="text-primary-dark tracking-normal font-medium">IA</span></span>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-2">
+            <a href="dashboard.html"
+                class="flex items-center gap-4 px-6 py-3 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all group">
+                <span class="text-sm font-bold tracking-wide transition-all">Painel Principal</span>
+            </a>
+            <a href="insights.html"
+                class="flex items-center gap-4 px-6 py-3 bg-primary text-slate-900 rounded-xl border border-primary/20 shadow-lg shadow-primary/20 transition-all group">
+                <span class="text-sm font-black tracking-wide">Análise da IA</span>
+            </a>
+            <a href="map.html"
+                class="flex items-center gap-4 px-6 py-3 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all group">
+                <span class="text-sm font-bold tracking-wide transition-all">Mapa Global</span>
+            </a>
+            <a href="thermal.html"
+                class="flex items-center gap-4 px-6 py-3 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all group">
+                <span class="text-sm font-bold tracking-wide transition-all">Saúde Térmica</span>
+            </a>
+            <div class="pt-4 pb-2 px-4">
+                <div class="h-px bg-slate-100 w-full"></div>
+            </div>
+            <a href="history.html"
+                class="flex items-center gap-4 px-4 py-3 text-slate-500 hover:text-primary-dark hover:bg-slate-100 rounded-xl transition-all group">
+                <span
+                    class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">&#xe889;</span>
+                <span class="text-sm font-medium tracking-wide group-hover:font-bold transition-all">Histórico</span>
+            </a>
+        </nav>
+
+        <div class="mt-auto px-4 pb-4">
+            <button
+                class="w-full flex items-center gap-4 px-4 py-3 text-slate-500 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all mb-4 group text-left">
+                <span
+                    class="material-symbols-outlined text-2xl group-hover:rotate-45 transition-transform">&#xe8b8;</span>
+                <span class="text-sm font-medium">Configurações</span>
+            </button>
+
+            <div
+                class="glass-card p-4 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition-all">
+                <div class="shrink-0 w-10 h-10 rounded-full border-2 border-primary/30 p-0.5 overflow-hidden">
+                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsf2QpByDYdR8w9PYRcz6HiUhRUjGPajQMp6Bw6uWw-A4fX-9mPvpNPrbPFaMo9e2Kr8HBBStsuEB2IEt_rr0nakHnXlOPMuegtGdk5T8VZxFPCG9RPEsfR7NGVg8NvptNU555CQ-b4xa3QWNXmPewWdXM547QfsRg_yzowBFlqcgMCRSNQDHYlb-lR8qttNNMG3k5BHBCiEi6m3U1PARFU0ocYsq4-TJiQkkYgxo14Of7VUdtHKnHNHlmCSRwtg9XxCdWQs_-LaSd"
+                        class="w-full h-full object-cover rounded-full">
+                </div>
+                <div class="flex flex-col min-w-0">
+                    <span class="text-xs font-black text-slate-900 truncate">Geraldo Neto</span>
+                    <span class="text-[10px] text-primary-dark font-bold truncate">Desenvolvedor Premium</span>
+                </div>
+                <span class="material-symbols-outlined text-slate-400 ml-auto">&#xe5d4;</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Conteúdo Principal -->
+    <main class="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar p-6 lg:p-10 z-0 relative">
+        <!-- Header -->
+        <div class="flex items-center gap-6 mb-12">
+            <div>
+                <div class="relative inline-block">
+                    <h1 class="text-4xl lg:text-5xl font-black tracking-tight text-slate-900 leading-tight">
+                        Análise da <span class="text-primary-dark">IA</span>
+                    </h1>
+                </div>
+                <p class="text-slate-700 font-medium text-lg">Relatório detalhado do estado cognitivo e biológico da
+                    colmeia.
+                </p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Diagnóstico e Audição -->
+            <div class="glass-card rounded-[3rem] p-8 relative overflow-hidden group">
+                <div class="flex items-center justify-between mb-6">
+                    <div>
+                        <span
+                            class="text-primary-dark text-xs font-black uppercase tracking-[0.3em] mb-1 block">Diagnóstico
+                            de Hoje</span>
+                        <h2 class="text-3xl font-black text-slate-900">Status Operacional</h2>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div id="audio-visualizer" class="audio-wave opacity-90 hidden">
+                            <!-- Bars will be generated by JS for better control -->
+                        </div>
+                        <div class="flex flex-col items-end gap-1">
+                            <span id="listening-timer"
+                                class="text-[10px] font-black text-primary-dark opacity-0 transition-opacity">00:00</span>
+                            <button id="btn-listening"
+                                class="flex items-center gap-2 px-6 py-3 bg-primary-dark text-white rounded-xl hover:brightness-110 transition-all shadow-lg shadow-primary-dark/20 group">
+                                <span id="listening-icon"
+                                    class="material-symbols-outlined text-white text-xl font-black group-hover:scale-110 transition-transform">&#xe029;</span>
+                                <span id="listening-text" class="text-xs font-black uppercase tracking-widest">Ouvir
+                                    Enxame</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <p
+                    class="text-xl lg:text-2xl font-medium text-slate-800 leading-tight mb-8 italic border-l-4 border-primary-dark pl-6">
+                    "Padrões de som estáveis. <span class="text-primary-dark font-black">Rainha identificada</span> por
+                    oscilações na gama de 240Hz. Atividade intensa na colmeia sugere produção recorde de propólis hoje."
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="p-4 bg-white/5 rounded-2xl border border-white/5 flex flex-col justify-center">
+                        <h4 class="text-primary-dark font-black text-[10px] uppercase tracking-widest">Saúde da Rainha
+                        </h4>
+                        <p class="text-slate-800 text-xs font-bold">Frequência de 240Hz constante</p>
+                    </div>
+                    <div class="p-4 border border-primary-dark/30 rounded-2xl flex flex-col justify-center">
+                        <h4 class="text-primary-dark font-bold text-[10px] uppercase tracking-widest">Ação Sugerida</h4>
+                        <p class="text-xs font-black italic text-slate-900 uppercase tracking-tighter">Otimizar coleta
+                            de própolis</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat com Especialista IA -->
+            <div class="glass-card rounded-[3rem] p-10">
+                <h3 class="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
+                    Tirar Dúvida com Especialista IA
+                </h3>
+
+                <div id="chat-messages"
+                    class="bg-black/5 rounded-[2rem] p-6 mb-6 h-64 overflow-y-auto custom-scrollbar flex flex-col gap-4">
+                    <div class="flex items-start gap-4">
+                        <div class="bg-white/80 p-4 rounded-2xl shadow-sm max-w-[90%]">
+                            <p class="text-xs text-slate-800 font-medium">Olá! Com base nos dados acústicos de hoje,
+                                identifiquei uma atividade vibratória excelente. Tens alguma dúvida sobre o manejo das
+                                grelhas de propólis?</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative flex items-center gap-2">
+                    <div class="relative flex-1">
+                        <input type="text" placeholder="Escreva a sua dúvida aqui..."
+                            class="w-full bg-white/50 border border-slate-200 rounded-2xl py-4 px-6 text-sm font-bold focus:ring-primary-dark focus:border-primary-dark transition-all pr-24">
+                        <button id="chat-send-btn"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-primary-dark font-black uppercase text-[10px] tracking-widest hover:brightness-110">
+                            Enviar
+                        </button>
+                    </div>
+                    <button id="voice-mode-btn"
+                        class="p-4 bg-white/50 border border-slate-200 rounded-2xl text-primary-dark hover:bg-primary/20 transition-all flex items-center justify-center group shadow-sm">
+                        <span
+                            class="material-symbols-outlined font-black group-hover:scale-110 transition-transform">mic</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Detalhes do Relatório -->
+            <div class="glass-card rounded-[3rem] p-10">
+                <h3 class="text-xl font-black text-slate-900 mb-8 flex items-center gap-3">
+                    Relatório Completo de Atividade
+                </h3>
+
+                <div class="space-y-12">
+                    <div
+                        class="flex items-start gap-6 p-6 hover:bg-white/5 rounded-3xl transition-all cursor-pointer border border-transparent hover:border-white/10">
+                        <div>
+                            <h4 class="text-lg font-black text-primary-dark mb-1">Padrão Bioacústico</h4>
+                            <p class="text-slate-800 text-sm font-medium leading-relaxed">As colméias estão emitindo um
+                                zumbido harmônico de baixa frequência, o que indica que as operárias estão em plena
+                                atividade de ventilação e coleta.</p>
+                        </div>
+                    </div>
+
+                    <div
+                        class="flex items-start gap-6 p-6 hover:bg-white/5 rounded-3xl transition-all border border-transparent hover:border-white/10">
+                        <div>
+                            <h4 class="text-lg font-black text-primary-dark mb-1">Sugestão de Manejo</h4>
+                            <p class="text-slate-800 text-sm font-medium leading-relaxed">Considerando a alta produção
+                                de própolis, recomenda-se verificar as grelhas coletoras para evitar o bloqueio total
+                                das entradas.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar de Insights -->
+        <div class="space-y-8">
+            <div class="glass-card rounded-[3rem] p-8">
+                <h4
+                    class="text-primary-dark text-[10px] uppercase font-black tracking-[0.2em] mb-6 border-b border-slate-900/10 pb-4">
+                    Indicadores de IA</h4>
+                <div class="space-y-8">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-bold text-slate-800">Oscilação Média</span>
+                        </div>
+                        <span class="text-xs font-black text-primary-dark">240Hz</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-bold text-slate-800">Estabilidade</span>
+                        </div>
+                        <span class="text-xs font-black text-primary-dark">96.8%</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-bold text-slate-800">Risco de Enxame</span>
+                        </div>
+                        <span class="text-xs font-black text-primary-dark">Baixo</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-[3rem] p-8 border border-primary-dark/20">
+                <div class="flex items-center gap-3 mb-4 text-primary-dark">
+                    <h4 class="text-sm font-black uppercase tracking-widest text-primary-dark">Aviso Preditivo</h4>
+                </div>
+                <p class="text-xs text-slate-800 leading-relaxed font-bold">Com base no histórico de 7 dias,
+                    prevemos um aumento de 15% na coleta de pólen nas próximas 48 horas devido às condições
+                    climáticas favoráveis.</p>
+            </div>
+        </div>
+        </div>
+    </main>
+    <script>
+        // Configuração Groq (Integração Direta com API Key)
+        const GROQ_API_KEY = 'SUA_CHAVE_AQUI';
+
+        // Estado Global
+        window.lastBeeAnalysis = null;
+        window.waveHistory = []; // Histórico de intensidades para a IA
+        let isListening = false;
+        let audioContext, analyser, microphone;
+        let timerInterval;
+        let startTime;
+
+        function updateTimer() {
+            const timerElem = document.getElementById('listening-timer');
+            const now = Date.now();
+            const diff = now - startTime;
+            const seconds = Math.floor((diff / 1000) % 60);
+            const minutes = Math.floor((diff / (1000 * 60)) % 60);
+            if (timerElem) {
+                timerElem.innerText = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+        }
+
+        async function analyzeBeeSound(frequency, stability) {
+            console.log("Analisando Bioacústica:", frequency, "Hz");
+            window.lastBeeAnalysis = { frequency, stability };
+
+            try {
+                const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${GROQ_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: "llama-3.1-8b-instant",
+                        messages: [{
+                            role: "system",
+                            content: "És um especialista em bioacústica de abelhas (BeeHealth IA). Analisa frequência, estabilidade e a evolução temporal das barras de som (percurso). Dá um diagnóstico curto (máx 2 frases) muito profissional."
+                        }, {
+                            role: "user",
+                            content: `Frequência: ${frequency}Hz, Estabilidade: ${stability}%, Sequência de intensidades (percurso): ${window.waveHistory.slice(-30).join(',')}`
+                        }],
+                        temperature: 0.5,
+                        max_tokens: 150
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error("Erro Groq (Bio):", errorData);
+                    return;
+                }
+
+                const data = await response.json();
+                const result = data.choices[0].message.content;
+
+                const diagText = document.querySelector('p.text-xl.lg\\:text-2xl');
+                if (diagText) diagText.innerHTML = `"${result}"`;
+            } catch (error) {
+                console.error("Erro na Chamada Groq (Bio):", error);
+            }
+        }
+
+        // Lógica de Captação de Áudio Local
+
+        async function toggleListening() {
+            const btn = document.getElementById('btn-listening');
+            const btnText = document.getElementById('listening-text');
+            const btnIcon = document.getElementById('listening-icon');
+            const timerElem = document.getElementById('listening-timer');
+            const visualizer = document.getElementById('audio-visualizer');
+
+            if (!isListening) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    analyser = audioContext.createAnalyser();
+                    microphone = audioContext.createMediaStreamSource(stream);
+                    microphone.connect(analyser);
+
+                    isListening = true;
+                    if (btn) btn.classList.add('animate-pulse', 'ring-4', 'ring-primary-dark/20', '!bg-red-600');
+                    if (btnText) btnText.innerText = 'Parar Audição';
+                    if (btnIcon) btnIcon.innerHTML = '&#xe047;'; // Stop hex
+
+                    if (timerElem) {
+                        timerElem.classList.remove('opacity-0');
+                        startTime = Date.now();
+                        timerInterval = setInterval(updateTimer, 1000);
+                    }
+
+                    if (visualizer) {
+                        visualizer.innerHTML = '';
+                        visualizer.classList.remove('hidden');
+                        window.waveHistory = []; // Resetar histórico ao iniciar nova gravação
+                    }
+
+                    console.log("A ouvir a colmeia (Live)...");
+
+                    const bufferLength = analyser.frequencyBinCount;
+                    const dataArray = new Uint8Array(bufferLength);
+                    let lastBarTime = 0;
+
+                    const updateVisuals = () => {
+                        if (!isListening) return;
+                        analyser.getByteFrequencyData(dataArray);
+
+                        const now = Date.now();
+                        if (now - lastBarTime > 100) { // Nova barra a cada 100ms
+                            const avgValue = Array.from(dataArray).reduce((a, b) => a + b, 0) / dataArray.length;
+                            const height = Math.round(Math.max(4, (avgValue / 128) * 50));
+
+                            // Guardar para análise da IA (linha a linha)
+                            window.waveHistory.push(height);
+                            if (window.waveHistory.length > 200) window.waveHistory.shift();
+
+                            const bar = document.createElement('div');
+                            bar.className = 'wave-bar flex-shrink-0';
+                            bar.style.height = `${height}px`;
+
+                            if (visualizer) {
+                                visualizer.appendChild(bar);
+                                visualizer.scrollLeft = visualizer.scrollWidth;
+                            }
+                            lastBarTime = now;
+                        }
+
+                        const peak = 240 + (Math.random() * 5 - 2.5);
+                        if (Math.random() > 0.99) {
+                            analyzeBeeSound(peak.toFixed(1), (95 + Math.random() * 4).toFixed(1));
+                        }
+                        requestAnimationFrame(updateVisuals);
+                    };
+                    updateVisuals();
+
+                } catch (err) {
+                    console.error('Erro de Áudio:', err);
+                    alert('Erro ao aceder ao microfone: ' + err.message);
+                }
+            } else {
+                isListening = false;
+                if (btn) btn.classList.remove('animate-pulse', 'ring-4', 'ring-primary-dark/20', '!bg-red-600');
+                if (btnText) btnText.innerText = 'Ouvir Enxame';
+                if (btnIcon) btnIcon.innerHTML = '&#xe029;'; // Mic hex
+                const visualizer = document.getElementById('audio-visualizer');
+                // visualizer não é escondido para permitir ver o percurso
+
+                if (timerElem) {
+                    timerElem.classList.add('opacity-0');
+                    clearInterval(timerInterval);
+                    timerElem.innerText = '00:00';
+                }
+                if (audioContext) audioContext.close();
+                console.log("Monitorização parada.");
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Configurar Botão de Ouvir
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => {
+                if (btn.id === 'btn-listening' || btn.textContent.includes('Ouvir Enxame')) {
+                    btn.onclick = toggleListening;
+                }
+            });
+
+            // Configurar Chat Inteligente
+            const chatInput = document.querySelector('input[type="text"]');
+            const chatBtn = document.getElementById('chat-send-btn');
+            const voiceBtn = document.getElementById('voice-mode-btn');
+            let isVoiceActive = false;
+            let recognition;
+            let currentUtterance = null;
+            let abortIA = false;
+
+            if (window.webkitSpeechRecognition || window.SpeechRecognition) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.lang = 'pt-PT';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onstart = () => {
+                    voiceBtn.classList.add('bg-red-100', 'border-red-500', 'animate-pulse');
+                    voiceBtn.querySelector('span').innerText = 'hearing';
+                };
+
+                recognition.onend = () => {
+                    if (isVoiceActive) recognition.start(); // Loop if voice mode is on
+                    else {
+                        voiceBtn.classList.remove('bg-red-100', 'border-red-500', 'animate-pulse');
+                        voiceBtn.querySelector('span').innerText = 'mic';
+                    }
+                };
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    chatInput.value = transcript;
+
+                    // Se o utilizador falar enquanto a IA está a responder, aborta a resposta atual
+                    if (currentUtterance) {
+                        window.speechSynthesis.cancel();
+                        currentUtterance = null;
+                    }
+                    abortIA = true; // Sinaliza para parar qualquer fetch em curso ou processamento
+
+                    setTimeout(() => {
+                        abortIA = false;
+                        handleChatSubmit();
+                    }, 500);
+                };
+
+                voiceBtn.onclick = () => {
+                    isVoiceActive = !isVoiceActive;
+                    if (isVoiceActive) {
+                        recognition.start();
+                    } else {
+                        recognition.stop();
+                        window.speechSynthesis.cancel();
+                    }
+                };
+            }
+
+            function speak(text) {
+                if (currentUtterance) window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'pt-PT';
+                utterance.rate = 1.1;
+                currentUtterance = utterance;
+                window.speechSynthesis.speak(utterance);
+                utterance.onend = () => currentUtterance = null;
+            }
+
+            if (chatBtn && chatInput) {
+                const chatMessages = document.getElementById('chat-messages');
+
+                function appendMessage(text, isUser = false) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+
+                    wrapper.innerHTML = `
+                        <div class="${isUser ? 'bg-primary-dark text-white' : 'bg-white/80 text-slate-800'} p-4 rounded-2xl shadow-sm max-w-[90%] ${isUser ? 'rounded-tr-none' : 'rounded-tl-none'}">
+                            <p class="text-xs font-medium">${text}</p>
+                        </div>
+                    `;
+
+                    chatMessages.appendChild(wrapper);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                    if (!isUser) speak(text);
+                }
+
+                async function handleChatSubmit() {
+                    const question = chatInput.value;
+                    if (!question) return;
+
+                    appendMessage(question, true);
+                    chatInput.value = '';
+
+                    chatBtn.innerText = "IA ANALISANDO...";
+                    chatBtn.disabled = true;
+                    abortIA = false;
+
+                    let context = "";
+                    if (window.lastBeeAnalysis) {
+                        context = ` [DADOS BIOACÚSTICOS DA COLMEIA: ${window.lastBeeAnalysis.frequency}Hz, ${window.lastBeeAnalysis.stability}% de estabilidade]`;
+                    }
+
+                    try {
+                        const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${GROQ_API_KEY}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                model: "llama-3.3-70b-versatile",
+                                messages: [{
+                                    role: "system",
+                                    content: "És a IA da BeeHealth. Analisa a dúvida do utilizador considerando os dados bioacústicos e a evolução das 'linhas' da onda (percurso sonoro). Responde de forma curta e prática."
+                                }, {
+                                    role: "user",
+                                    content: `${question}${context}${window.waveHistory.length > 0 ? ' [HISTÓRICO DA ONDA: ' + window.waveHistory.slice(-50).join(',') + ']' : ''}`
+                                }]
+                            })
+                        });
+
+                        if (abortIA) return; // Se o utilizador começou a falar de novo, ignora esta resposta
+
+                        if (!response.ok) {
+                            const errorData = await response.json();
+                            throw new Error(errorData.error ? errorData.error.message : "Erro desconhecido na API Groq");
+                        }
+
+                        const data = await response.json();
+                        if (abortIA) return;
+
+                        const answer = data.choices[0].message.content;
+                        appendMessage(answer, false);
+
+                    } catch (e) {
+                        console.error("Erro no Chat:", e);
+                        if (!abortIA) appendMessage("Desculpe, ocorreu um erro na conexão: " + e.message, false);
+                    } finally {
+                        chatBtn.innerText = "ENVIAR";
+                        chatBtn.disabled = false;
+                    }
+                }
+
+                chatBtn.onclick = handleChatSubmit;
+            }
+        });
+    </script>
+</body>
+
+</html>

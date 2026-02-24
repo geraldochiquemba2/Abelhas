@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>BeeHealth IA - Saúde Térmica</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#ffd900",
+                        "primary-dark": "#b45309",
+                        "glass": "rgba(255, 255, 255, 0.1)",
+                        "glass-border": "rgba(255, 255, 255, 0.2)",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: "Space Grotesk", sans-serif;
+            background: #f8f8f5;
+            color: #0f172a;
+            overflow: hidden;
+        }
+
+        .honeycomb-pattern {
+            background-color: #f8f8f5;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100' viewBox='0 0 56 100'%3E%3Cpath d='M28 66L0 50L0 16L28 0L56 16L56 50L28 66L28 100' fill='none' stroke='%23f59e0b' stroke-width='1.5' stroke-opacity='0.4'/%3E%3C/svg%3E");
+            background-size: 56px 100px;
+            animation: honeycomb-vibrate 8s ease-in-out infinite;
+        }
+
+        @keyframes honeycomb-vibrate {
+            0% {
+                background-position: 0 0;
+            }
+
+            25% {
+                background-position: 6px 4px;
+            }
+
+            50% {
+                background-position: -4px 8px;
+            }
+
+            75% {
+                background-position: 8px -3px;
+            }
+
+            100% {
+                background-position: 0 0;
+            }
+        }
+
+        .glass-card {
+            background: rgba(0, 0, 0, 0.05) !important;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .sidebar-premium {
+            background: rgba(248, 248, 245, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-right: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-path {
+            stroke-dasharray: 1000;
+            stroke-dashoffset: 1000;
+            animation: draw 3s ease forwards;
+        }
+
+        @keyframes draw {
+            to {
+                stroke-dashoffset: 0;
+            }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 217, 0, 0.2);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body class="h-screen flex honeycomb-pattern text-slate-900 font-display">
+
+    <!-- Sidebar Lateral Premium -->
+    <aside
+        class="w-64 sidebar-premium h-screen flex flex-col py-8 z-10 transition-all duration-300 border-r border-primary-dark/30">
+        <div class="px-8 mb-12 flex items-center gap-3 group cursor-pointer"
+            onclick="window.location.href='index.html'">
+            <span class="text-xl font-black tracking-tighter text-slate-900">BeeHealth<span
+                    class="text-primary-dark tracking-normal font-medium">IA</span></span>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-2">
+            <a href="dashboard.html"
+                class="flex items-center gap-4 px-6 py-3 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all group">
+                <span class="text-sm font-bold tracking-wide transition-all">Painel Principal</span>
+            </a>
+            <a href="insights.html"
+                class="flex items-center gap-4 px-6 py-3 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all group">
+                <span class="text-sm font-bold tracking-wide transition-all">Análise da IA</span>
+            </a>
+            <a href="map.html"
+                class="flex items-center gap-4 px-6 py-3 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all group">
+                <span class="text-sm font-bold tracking-wide transition-all">Mapa Global</span>
+            </a>
+            <a href="thermal.html"
+                class="flex items-center gap-4 px-6 py-3 bg-primary text-slate-900 rounded-xl border border-primary/20 shadow-lg shadow-primary/20 transition-all group">
+                <span class="text-sm font-black tracking-wide">Saúde Térmica</span>
+            </a>
+            <div class="pt-4 pb-2 px-4">
+                <div class="h-px bg-slate-100 w-full"></div>
+            </div>
+            <a href="history.html"
+                class="flex items-center gap-4 px-4 py-3 text-slate-500 hover:text-primary-dark hover:bg-slate-100 rounded-xl transition-all group">
+                <span
+                    class="material-symbols-outlined text-2xl group-hover:scale-110 transition-transform">&#xe889;</span>
+                <span class="text-sm font-medium tracking-wide group-hover:font-bold transition-all">Histórico</span>
+            </a>
+        </nav>
+
+        <div class="mt-auto px-4 pb-4">
+            <div
+                class="glass-card p-4 rounded-2xl flex items-center gap-3 cursor-pointer hover:bg-white/10 transition-all">
+                <div class="shrink-0 w-10 h-10 rounded-full border-2 border-primary/30 p-0.5 overflow-hidden">
+                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuAsf2QpByDYdR8w9PYRcz6HiUhRUjGPajQMp6Bw6uWw-A4fX-9mPvpNPrbPFaMo9e2Kr8HBBStsuEB2IEt_rr0nakHnXlOPMuegtGdk5T8VZxFPCG9RPEsfR7NGVg8NvptNU555CQ-b4xa3QWNXmPewWdXM547QfsRg_yzowBFlqcgMCRSNQDHYlb-lR8qttNNMG3k5BHBCiEi6m3U1PARFU0ocYsq4-TJiQkkYgxo14Of7VUdtHKnHNHlmCSRwtg9XxCdWQs_-LaSd"
+                        class="w-full h-full object-cover rounded-full">
+                </div>
+                <div class="flex flex-col min-w-0">
+                    <span class="text-xs font-black text-slate-900 truncate">Geraldo Neto</span>
+                    <span class="text-[10px] text-primary-dark font-bold truncate">Desenvolvedor Premium</span>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Conteúdo Principal -->
+    <main class="flex-1 overflow-x-hidden overflow-y-auto custom-scrollbar p-6 lg:p-10 z-0 relative">
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+            <div>
+                <div
+                    class="flex items-center gap-3 text-primary-dark text-xs font-black uppercase tracking-[0.2em] mb-3">
+                    Sensor Térmico HT-402 • Colmeia Alpha-092
+                </div>
+                <div class="relative inline-block">
+                    <h1 class="text-5xl lg:text-6xl font-black tracking-tighter text-slate-900 leading-none">
+                        Saúde <span class="text-primary-dark">Térmica</span>
+                    </h1>
+                </div>
+                <p class="text-slate-700 font-medium text-lg lg:text-xl">Estabilidade do ninho e regulação de humidade.
+                </p>
+            </div>
+        </div>
+
+        <!-- Métricas Térmicas -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            <div class="glass-card p-6 rounded-3xl">
+                <h3 class="text-slate-900 text-[10px] font-black uppercase tracking-widest mb-1">Temperatura Média</h3>
+                <div class="text-3xl font-black text-slate-900">34.8°C</div>
+                <p class="text-[10px] text-green-600 font-bold mt-2 uppercase tracking-tighter">Ideal para Incubação</p>
+            </div>
+            <div class="glass-card p-6 rounded-3xl">
+                <h3 class="text-slate-900 text-[10px] font-black uppercase tracking-widest mb-1">Humidade Relativa</h3>
+                <div class="text-3xl font-black text-slate-900">62%</div>
+                <p class="text-[10px] text-slate-500 font-bold mt-2 uppercase tracking-tighter">Dentro dos Padrões</p>
+            </div>
+            <div class="glass-card p-6 rounded-3xl">
+                <h3 class="text-slate-900 text-[10px] font-black uppercase tracking-widest mb-1">Ponto de Orvalho</h3>
+                <div class="text-3xl font-black text-slate-900">22.4°C</div>
+                <p class="text-[10px] text-primary-dark font-bold mt-2 uppercase tracking-tighter">Estável</p>
+            </div>
+            <div class="glass-card p-6 rounded-3xl">
+                <h3 class="text-slate-900 text-[10px] font-black uppercase tracking-widest mb-1">Variância Térmica</h3>
+                <div class="text-3xl font-black text-slate-900">0.4°C</div>
+                <p class="text-[10px] text-slate-500 font-bold mt-2 uppercase tracking-tighter">Variação 24h</p>
+            </div>
+        </div>
+
+        <!-- Gráfico de Tendência Térmica -->
+        <div class="glass-card rounded-[2.5rem] p-8 mb-10">
+            <h3 class="text-2xl font-black text-slate-900 mb-8">Tendência Térmica (24h)</h3>
+            <div class="h-[300px] w-full bg-black/5 rounded-[2rem] relative overflow-hidden p-6">
+                <!-- SVG Simplificado para Representar o Gráfico -->
+                <svg class="w-full h-full" viewBox="0 0 800 200" preserveAspectRatio="none">
+                    <path d="M0 150 Q 200 130, 400 145 T 800 120" stroke="#b45309" stroke-width="4" fill="none"
+                        class="chart-path" />
+                </svg>
+                <div
+                    class="absolute bottom-4 left-6 right-6 flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                    <span>00:00</span>
+                    <span>06:00</span>
+                    <span>12:00</span>
+                    <span>18:00</span>
+                    <span>Agora</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+</body>
+
+</html>
