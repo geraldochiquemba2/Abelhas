@@ -19,6 +19,7 @@ export const AnalysisPanel: React.FC = () => {
     const [messages, setMessages] = useState<Msg[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [waveHistory, setWaveHistory] = useState<number[]>([]);
+    const [frequencyData, setFrequencyData] = useState<number[]>([]);
     const [timer, setTimer] = useState('00:00');
 
     const [cameraActive, setCameraActive] = useState(false);
@@ -30,6 +31,7 @@ export const AnalysisPanel: React.FC = () => {
     const streamRef = useRef<MediaStream | null>(null);
     const recorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
+    const freqSamplesRef = useRef<number[][]>([]);
     const videoRef = useRef<HTMLVideoElement>(null);
     const chatMessagesRef = useRef<HTMLDivElement>(null);
     const startTimeRef = useRef<number>(0);
@@ -55,10 +57,13 @@ export const AnalysisPanel: React.FC = () => {
                 streamRef.current = stream;
                 audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
                 analyserRef.current = audioContextRef.current.createAnalyser();
+                analyserRef.current.fftSize = 2048;
+                analyserRef.current.smoothingTimeConstant = 0.8;
                 const source = audioContextRef.current.createMediaStreamSource(stream);
                 source.connect(analyserRef.current);
 
                 audioChunksRef.current = [];
+                freqSamplesRef.current = [];
                 recorderRef.current = new MediaRecorder(stream);
                 recorderRef.current.ondataavailable = (e) => audioChunksRef.current.push(e.data);
                 recorderRef.current.start();
@@ -66,9 +71,11 @@ export const AnalysisPanel: React.FC = () => {
                 setIsListening(true);
                 startTimeRef.current = Date.now();
                 setWaveHistory([]);
+                setFrequencyData([]);
 
                 const bufferLength = analyserRef.current.frequencyBinCount;
                 const dataArray = new Uint8Array(bufferLength);
+                let sampleCount = 0;
 
                 const updateVisuals = () => {
                     if (!analyserRef.current) return;
@@ -76,6 +83,32 @@ export const AnalysisPanel: React.FC = () => {
                     const avgValue = Array.from(dataArray).reduce((a, b) => a + b, 0) / dataArray.length;
                     const height = Math.round(Math.max(4, (avgValue / 128) * 50));
                     setWaveHistory((prev) => [...prev.slice(-199), height]);
+
+                    // Collect frequency band samples every ~500ms
+                    sampleCount++;
+                    if (sampleCount % 30 === 0) {
+                        const nyquist = (audioContextRef.current?.sampleRate || 44100) / 2;
+                        const binHz = nyquist / bufferLength;
+
+                        const band = (lowHz: number, highHz: number) => {
+                            const lowBin = Math.floor(lowHz / binHz);
+                            const highBin = Math.min(Math.ceil(highHz / binHz), bufferLength);
+                            let sum = 0, count = 0;
+                            for (let i = lowBin; i < highBin; i++) { sum += dataArray[i]; count++; }
+                            return count > 0 ? Math.round(sum / count) : 0;
+                        };
+
+                        // Bee-relevant frequency bands
+                        freqSamplesRef.current.push([
+                            band(50, 150),    // Low (normal hum, 100-260Hz activity)
+                            band(150, 350),   // Mid-low (workers)
+                            band(350, 500),   // Mid (queen tooting 350-500Hz)
+                            band(500, 1000),  // High-mid (queenless 478-1080Hz)
+                            band(1000, 3000), // High (stress, piping)
+                            band(3000, 8000), // Very high (Varroa wing beat ~300Hz but harmonics go higher)
+                        ]);
+                    }
+
                     const diff = Date.now() - startTimeRef.current;
                     const seconds = Math.floor((diff / 1000) % 60);
                     const minutes = Math.floor((diff / (1000 * 60)) % 60);
@@ -84,7 +117,7 @@ export const AnalysisPanel: React.FC = () => {
                 };
                 updateVisuals();
             } catch {
-                alert('Erro ao aceder ao microfone');
+                alert('Erro ao aceder ao microfone. Verifique se concedeu permissão.');
             }
         } else {
             setIsListening(false);
@@ -100,27 +133,52 @@ export const AnalysisPanel: React.FC = () => {
     const analyzeAudio = async (blob: Blob) => {
         try {
             setAnalyzing('audio');
-            const audioBase64 = await blobToBase64(blob);
-            const transRes = await fetch('/api/transcribe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ audioBase64, mime: 'audio/webm' }),
-            });
-            const transData = await transRes.json();
-            const transcript = transData.text || '[sem transcrição]';
+
+            // Compute average frequency bands from collected samples
+            const samples = freqSamplesRef.current;
+            let avgBands = [0, 0, 0, 0, 0, 0];
+            if (samples.length > 0) {
+                for (const s of samples) {
+                    for (let i = 0; i < 6; i++) avgBands[i] += s[i];
+                }
+                avgBands = avgBands.map(v => Math.round(v / samples.length));
+            }
+
+            const durationSec = Math.round((Date.now() - startTimeRef.current) / 1000);
+            const bandLabels = [
+                'Atividade normal (50-150Hz)',
+                'Operárias (150-350Hz)',
+                'Rainha tooting (350-500Hz)',
+                'Rainha ausente (500-1000Hz)',
+                'Stress/Piping (1000-3000Hz)',
+                'Harmónicos altos (3000-8000Hz)',
+            ];
+            const freqSummary = bandLabels.map((l, i) => `${l}: ${avgBands[i]}/255`).join('\n');
 
             const diagnosis = await callChat([
                 {
                     role: 'system',
                     content:
-                        'És um especialista em apicultura e bioacústica. Analisa o som de uma colmeia e indica: estado da rainha, nível de atividade, sinais de enxameio, stress ou pragas (ex.: Varroa). Sê breve e prático (máx. 3 frases).',
+                        'És um especialista em apicultura e bioacústica de abelhas. Analisa os dados de frequência de uma gravação de colmeia e indica:\n' +
+                        '1. Estado da rainha (presente/ausente/enxameio)\n' +
+                        '2. Nível de atividade da colónia\n' +
+                        '3. Sinais de enxameio, stress ou pragas (ex.: Varroa)\n' +
+                        '4. Recomendação prática\n' +
+                        'Sê breve e prático (máx. 5 frases). Responde em português.',
                 },
-                { role: 'user', content: `Transcrição do áudio da colmeia: "${transcript}". Frequências típicas: rainha "tooting" 350-500Hz, "queenless" 478-1080Hz, atividade normal 100-260Hz. Dá o diagnóstico.` },
+                {
+                    role: 'user',
+                    content:
+                        `Análise de frequências de áudio da colmeia (duração: ${durationSec}s, ${samples.length} amostras):\n\n` +
+                        freqSummary + '\n\n' +
+                        'Referências: Rainha "tooting" 350-500Hz, rainha ausente 478-1080Hz, atividade normal 100-260Hz. Varroa destructor vibra a ~300Hz com harmónicos.\n\n' +
+                        'Dá o diagnóstico com base nos dados de frequência.',
+                },
             ]);
-            setMessages((prev) => [...prev, { text: `🔊 ${diagnosis}`, isUser: false }]);
-            saveDiagnostic({ type: 'audio', input: transcript, result: diagnosis }).catch(() => {});
+            setMessages((prev) => [...prev, { text: `🔊 Diagnóstico por áudio:\n\n${diagnosis}`, isUser: false }]);
+            saveDiagnostic({ type: 'audio', input: freqSummary, result: diagnosis }).catch(() => {});
         } catch (e: any) {
-            alert('Erro: ' + e.message);
+            alert('Erro na análise de áudio: ' + e.message);
         } finally {
             setAnalyzing(null);
         }
@@ -128,15 +186,31 @@ export const AnalysisPanel: React.FC = () => {
 
     const startCamera = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            if (!navigator.mediaDevices?.getUserMedia) {
+                alert('Câmara não suportada neste navegador. Use Chrome ou Safari.');
+                return;
+            }
+            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+                alert('A câmara precisa de HTTPS para funcionar. Aceda via HTTPS.');
+                return;
+            }
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+            });
             streamRef.current = stream;
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
                 videoRef.current.play();
             }
             setCameraActive(true);
-        } catch {
-            alert('Erro ao aceder à câmara');
+        } catch (e: any) {
+            if (e.name === 'NotAllowedError') {
+                alert('Permissão da câmara negada. Conceda permissão nas definições do navegador.');
+            } else if (e.name === 'NotFoundError') {
+                alert('Nenhuma câmara encontrada no dispositivo.');
+            } else {
+                alert('Erro ao aceder à câmara: ' + e.message);
+            }
         }
     };
 
@@ -246,9 +320,14 @@ export const AnalysisPanel: React.FC = () => {
                         </button>
                     )}
                     {photo && !cameraActive && (
-                        <button onClick={analyzePhoto} disabled={analyzing === 'photo'} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-slate-900 font-black text-xs uppercase tracking-widest disabled:opacity-50">
-                            <Sparkles className="w-4 h-4" /> Analisar com Groq
-                        </button>
+                        <>
+                            <button onClick={startCamera} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-600 text-white font-black text-xs uppercase tracking-widest">
+                                <Camera className="w-4 h-4" /> Repetir Foto
+                            </button>
+                            <button onClick={analyzePhoto} disabled={analyzing === 'photo'} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-slate-900 font-black text-xs uppercase tracking-widest disabled:opacity-50">
+                                <Sparkles className="w-4 h-4" /> {analyzing === 'photo' ? 'Analisando...' : 'Analisar com IA'}
+                            </button>
+                        </>
                     )}
                 </div>
             </div>

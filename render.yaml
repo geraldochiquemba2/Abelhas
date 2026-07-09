@@ -1,6 +1,11 @@
 services:
-  - type: static
+  - type: web
     name: abelhas
-    env: static
-    buildCommand: npm run build
-    publishPath: dist
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: node server/index.js
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
