@@ -61,7 +61,7 @@ const Home: React.FC = () => {
                 <div className="max-w-7xl mx-auto px-6 h-12 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <h1 className="text-xl font-bold tracking-tight text-white">
-                            BeeHealth <span className="text-primary">IA</span>
+                            Colmeia <span className="text-primary">Saudável</span>
                         </h1>
                     </div>
                     <div className="hidden md:flex items-center gap-10">
@@ -140,7 +140,7 @@ const Home: React.FC = () => {
                         <span className="text-primary-dark font-bold tracking-widest uppercase text-sm mb-4">A Nossa Missão</span>
                         <h2 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6">Protegendo o ecossistema através da tecnologia</h2>
                         <p className="text-lg text-slate-600 leading-relaxed">
-                            O BeeHealth AI faz a ponte entre a natureza e os dados para garantir a sobrevivência das colmeias. Acreditamos que o monitoramento silencioso é o futuro da apicultura sustentável.
+                            A Colmeia Saudável faz a ponte entre a natureza e os dados para garantir a sobrevivência das colmeias. Acreditamos que o monitoramento silencioso é o futuro da apicultura sustentável.
                         </p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">

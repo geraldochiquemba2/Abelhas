@@ -16,8 +16,8 @@ export const Sidebar: React.FC = () => {
         <aside className="w-64 sidebar-premium h-screen flex flex-col py-8 z-10 transition-all duration-300 border-r border-primary-dark/30">
             <div className="px-8 mb-12 flex items-center gap-3 group cursor-pointer" onClick={() => window.location.href = '/'}>
                 <span className="text-xl font-black tracking-tighter text-slate-900">
-                    BeeHealth
-                    <span className="text-primary-dark tracking-normal font-medium">IA</span>
+                    Colmeia
+                    <span className="text-primary-dark tracking-normal font-medium"> Saudável</span>
                 </span>
             </div>
 

@@ -197,7 +197,7 @@ export const Insights: React.FC = () => {
         try {
             setAnalyzing('chat');
             const reply = await callGroqChat([
-                { role: 'system', content: 'És o assistente BeeHealth IA, especialista em colmeias e bioacústica. Responde em português, de forma clara e útil para apicultores.' },
+                { role: 'system', content: 'És o assistente Colmeia Saudável, especialista em colmeias e bioacústica. Responde em português, de forma clara e útil para apicultores.' },
                 ...messages.map((m) => ({ role: m.isUser ? 'user' : 'assistant', content: m.text })),
                 { role: 'user', content: userMsg },
             ]);
