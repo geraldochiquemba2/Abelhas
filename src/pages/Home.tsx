@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { ArrowRight, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { AnalysisPanel } from '../components/AnalysisPanel';
 
 const Home: React.FC = () => {
     const navigate = useNavigate();
@@ -171,13 +170,6 @@ const Home: React.FC = () => {
                             </div>
                         </div>
                     </div>
-                </div>
-            </section>
-
-            {/* Painel de Análise */}
-            <section className="py-24 bg-white">
-                <div className="container mx-auto px-6">
-                    <AnalysisPanel />
                 </div>
             </section>
         </div>

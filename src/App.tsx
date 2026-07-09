@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
+import { Insights } from './pages/Insights';
 import { MapPage } from './pages/Map';
 import Thermal from './pages/Thermal';
 import { HistoryPage } from './pages/History';
@@ -9,8 +10,8 @@ function App() {
         <Router>
             <Routes>
                 <Route path="/" element={<Home />} />
-                <Route path="/insights" element={<Home />} />
-                <Route path="/dashboard" element={<Home />} />
+                <Route path="/insights" element={<Insights />} />
+                <Route path="/dashboard" element={<Insights />} />
                 <Route path="/map" element={<MapPage />} />
                 <Route path="/thermal" element={<Thermal />} />
                 <Route path="/history" element={<HistoryPage />} />

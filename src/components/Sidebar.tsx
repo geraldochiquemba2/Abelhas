@@ -1,9 +1,10 @@
 import React from 'react';
-import { LayoutDashboard, Map, Thermometer, History, Settings, MoreVertical } from 'lucide-react';
+import { LayoutDashboard, Home, Map, Thermometer, History, Settings, MoreVertical } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
 const navItems = [
     { name: 'Painel Principal', path: '/', icon: LayoutDashboard },
+    { name: 'Análise da IA', path: '/insights', icon: Home },
     { name: 'Mapa Global', path: '/map', icon: Map },
     { name: 'Saúde Térmica', path: '/thermal', icon: Thermometer },
 ];
