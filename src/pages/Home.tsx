@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { ArrowRight, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { AnalysisPanel } from '../components/AnalysisPanel';
 
 const Home: React.FC = () => {
     const navigate = useNavigate();
@@ -69,12 +70,6 @@ const Home: React.FC = () => {
                         <a className="text-sm font-medium text-white hover:text-primary transition-colors" href="#tecnologia">Tecnologia</a>
                         <button onClick={() => navigate('/dashboard')} className="text-sm font-medium text-white hover:text-primary transition-colors">Dashboard</button>
                         <button onClick={() => navigate('/map')} className="text-sm font-medium text-white hover:text-primary transition-colors">Mapa</button>
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => navigate('/login')} className="px-5 py-2 text-sm font-bold text-white hover:bg-white/10 rounded-lg transition-all">Entrar</button>
-                        <button onClick={() => navigate('/signup')} className="bg-primary text-background-dark px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
-                            Cadastrar
-                        </button>
                     </div>
                 </div>
             </nav>
@@ -176,6 +171,13 @@ const Home: React.FC = () => {
                             </div>
                         </div>
                     </div>
+                </div>
+            </section>
+
+            {/* Painel de Análise */}
+            <section className="py-24 bg-white">
+                <div className="container mx-auto px-6">
+                    <AnalysisPanel />
                 </div>
             </section>
         </div>

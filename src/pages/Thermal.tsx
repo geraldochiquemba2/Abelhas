@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from '../components/Layout';
+import { saveDiagnostic } from '../api';
 
 const GROQ_CHAT_MODEL = 'llama-3.3-70b-versatile';
-const GROQ_URL = 'https://api.groq.com/openai/v1';
 
 const REGIONS = [
     { name: 'Cabinda', lat: -5.55, lon: 12.19 },
@@ -58,7 +58,6 @@ const generateField = (center: number, tick: number) => {
 };
 
 const Thermal: React.FC = () => {
-    const [apiKey, setApiKey] = useState('');
     const [region, setRegion] = useState(REGIONS[0]);
     const [outdoorTemp, setOutdoorTemp] = useState<number | null>(null);
     const [hiveTemp, setHiveTemp] = useState('');
@@ -91,13 +90,12 @@ const Thermal: React.FC = () => {
     const classify = async () => {
         const h = parseFloat(hiveTemp);
         if (isNaN(h)) return alert('Insere a temperatura interna da colmeia.');
-        if (!apiKey) return alert('Insere a tua chave Groq.');
         setCenter(h);
         setLoading(true);
         try {
-            const res = await fetch(`${GROQ_URL}/chat/completions`, {
+            const res = await fetch('/api/chat', {
                 method: 'POST',
-                headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     model: GROQ_CHAT_MODEL,
                     temperature: 0.5,
@@ -115,9 +113,11 @@ const Thermal: React.FC = () => {
                 }),
             });
             const data = await res.json();
-            setDiagnosis(data.choices[0].message.content);
+            const text = data.choices[0].message.content;
+            setDiagnosis(text);
+            saveDiagnostic({ type: 'thermal', region: region.name, temperature: h, result: text }).catch(() => {});
         } catch (e: any) {
-            alert('Erro Groq: ' + e.message);
+            alert('Erro: ' + e.message);
         } finally {
             setLoading(false);
         }
@@ -132,13 +132,6 @@ const Thermal: React.FC = () => {
                     </h1>
                     <p className="text-slate-700 font-medium text-lg">Classificação térmica via Groq com clima regional de Angola.</p>
                 </div>
-                <input
-                    type="password"
-                    value={apiKey}
-                    onChange={(e) => setApiKey(e.target.value)}
-                    placeholder="Cole a tua chave Groq (gsk-...)"
-                    className="bg-white/60 border border-slate-200 rounded-2xl py-3 px-5 text-sm font-bold w-72 focus:ring-primary-dark"
-                />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
