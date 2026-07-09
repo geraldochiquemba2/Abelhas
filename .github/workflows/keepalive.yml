@@ -8,6 +8,8 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
+    env:
+      SITE_URL: ${{ vars.SITE_URL || 'https://colmeiasaudavel.onrender.com' }}
     steps:
       - name: Ping Render service
-        run: curl -fsS --max-time 25 https://colmeiasaudavel.onrender.com || echo "ping falhou (serviço pode estar a acordar)"
+        run: curl -fsS --max-time 25 "$SITE_URL" || echo "ping falhou (serviço pode estar a acordar)"
