@@ -60,18 +60,18 @@ const Home: React.FC = () => {
             <nav className="fixed top-0 w-full z-50 glass-nav border-b border-primary/10">
                 <div className="max-w-7xl mx-auto px-6 h-12 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <h1 className="text-xl font-bold tracking-tight text-slate-900">
-                            BeeHealth <span className="text-primary-dark">IA</span>
+                        <h1 className="text-xl font-bold tracking-tight text-white">
+                            BeeHealth <span className="text-primary">IA</span>
                         </h1>
                     </div>
                     <div className="hidden md:flex items-center gap-10">
-                        <a className="text-sm font-medium hover:text-primary transition-colors" href="#missao">A Nossa Missão</a>
-                        <a className="text-sm font-medium hover:text-primary transition-colors" href="#tecnologia">Tecnologia</a>
-                        <button onClick={() => navigate('/dashboard')} className="text-sm font-medium hover:text-primary transition-colors">Dashboard</button>
-                        <button onClick={() => navigate('/map')} className="text-sm font-medium hover:text-primary transition-colors">Mapa</button>
+                        <a className="text-sm font-medium text-white hover:text-primary transition-colors" href="#missao">A Nossa Missão</a>
+                        <a className="text-sm font-medium text-white hover:text-primary transition-colors" href="#tecnologia">Tecnologia</a>
+                        <button onClick={() => navigate('/dashboard')} className="text-sm font-medium text-white hover:text-primary transition-colors">Dashboard</button>
+                        <button onClick={() => navigate('/map')} className="text-sm font-medium text-white hover:text-primary transition-colors">Mapa</button>
                     </div>
                     <div className="flex items-center gap-4">
-                        <button onClick={() => navigate('/login')} className="px-5 py-2 text-sm font-bold hover:bg-slate-100 rounded-lg transition-all">Entrar</button>
+                        <button onClick={() => navigate('/login')} className="px-5 py-2 text-sm font-bold text-white hover:bg-white/10 rounded-lg transition-all">Entrar</button>
                         <button onClick={() => navigate('/signup')} className="bg-primary text-background-dark px-6 py-2.5 rounded-lg text-sm font-bold shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform">
                             Cadastrar
                         </button>
@@ -144,9 +144,9 @@ const Home: React.FC = () => {
                         </p>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <MissionCard title="Sustentabilidade" description="Foco total no equilíbrio ambiental e na preservação da biodiversidade global." bg="https://images.unsplash.com/photo-1589650394332-9cb542a1293c?auto=format&fit=crop&q=80&w=800" />
-                        <MissionCard title="Inovação" description="Tecnologia de ponta em bioacústica e redes neurais para apicultura de precisão." bg="https://images.unsplash.com/photo-1463930355325-05589e13e51f?auto=format&fit=crop&q=80&w=800" />
-                        <MissionCard title="Preservação" description="Proteção ativa das espécies através da detecção precoce de anomalias." bg="https://images.unsplash.com/photo-1558231907-7ea9550e823f?auto=format&fit=crop&q=80&w=800" />
+                        <MissionCard title="Sustentabilidade" description="Foco total no equilíbrio ambiental e na preservação da biodiversidade global." bg="https://images.unsplash.com/photo-1736578147651-5b808b02ab01?auto=format&fit=crop&q=80&w=800" />
+                        <MissionCard title="Inovação" description="Tecnologia de ponta em bioacústica e redes neurais para apicultura de precisão." bg="https://images.unsplash.com/photo-1758522964667-a3271801a5a8?auto=format&fit=crop&q=80&w=800" />
+                        <MissionCard title="Preservação" description="Proteção ativa das espécies através da detecção precoce de anomalias." bg="https://images.unsplash.com/photo-1617157382389-771cf2691904?auto=format&fit=crop&q=80&w=800" />
                     </div>
                 </div>
             </section>
@@ -158,7 +158,7 @@ const Home: React.FC = () => {
                         <div className="relative">
                             <div className="absolute -top-10 -left-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
                             <div className="relative bg-white p-4 rounded-3xl shadow-2xl border border-white/50 overflow-hidden aspect-video">
-                                <video ref={techVideoRef} autoPlay loop muted playsInline className="rounded-2xl w-full h-full object-cover">
+                                    <video ref={techVideoRef} autoPlay loop muted playsInline className="rounded-2xl w-full h-full object-cover">
                                     <source src="/videos/18069472-hd_1280_720_24fps.mp4" type="video/mp4" />
                                 </video>
                             </div>

@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import { Insights } from './pages/Insights';
 import { MapPage } from './pages/Map';
-import { Thermal } from './pages/Thermal';
+import Thermal from './pages/Thermal';
 import { HistoryPage } from './pages/History';
 
 function App() {
