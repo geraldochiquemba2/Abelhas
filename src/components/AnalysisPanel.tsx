@@ -19,7 +19,7 @@ export const AnalysisPanel: React.FC = () => {
     const [messages, setMessages] = useState<Msg[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [waveHistory, setWaveHistory] = useState<number[]>([]);
-    const [frequencyData, setFrequencyData] = useState<number[]>([]);
+    const [_frequencyData, setFrequencyData] = useState<number[]>([]);
     const [timer, setTimer] = useState('00:00');
 
     const [cameraActive, setCameraActive] = useState(false);
@@ -41,14 +41,6 @@ export const AnalysisPanel: React.FC = () => {
             chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
         }
     }, [messages]);
-
-    const blobToBase64 = (blob: Blob) =>
-        new Promise<string>((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
-            reader.onerror = reject;
-            reader.readAsDataURL(blob);
-        });
 
     const toggleListening = async () => {
         if (!isListening) {
@@ -130,7 +122,7 @@ export const AnalysisPanel: React.FC = () => {
         }
     };
 
-    const analyzeAudio = async (blob: Blob) => {
+    const analyzeAudio = async (_blob: Blob) => {
         try {
             setAnalyzing('audio');
 
