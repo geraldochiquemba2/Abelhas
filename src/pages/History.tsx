@@ -23,30 +23,30 @@ export const HistoryPage: React.FC = () => {
 
     return (
         <Layout>
-            <div className="flex items-center gap-6 mb-12">
+            <div className="flex items-center gap-4 sm:gap-6 mb-6 sm:mb-12">
                 <div>
-                    <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-slate-900 leading-tight">
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 leading-tight">
                         Histórico de <span className="text-primary-dark">Sinais</span>
                     </h1>
-                    <p className="text-slate-700 font-medium text-lg">Análises guardadas neste dispositivo (temporário).</p>
+                    <p className="text-slate-700 font-medium text-base sm:text-lg">Análises guardadas neste dispositivo (temporário).</p>
                 </div>
             </div>
             {items.length === 0 ? (
-                <div className="glass-card rounded-3xl p-10 text-center text-slate-500 font-bold">
+                <div className="glass-card rounded-2xl lg:rounded-3xl p-6 sm:p-10 text-center text-slate-500 font-bold">
                     Nenhuma análise guardada ainda. Use o painel principal para analisar a colmeia.
                 </div>
             ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                     {items.map((it) => (
-                        <div key={it.id} className="glass-card rounded-3xl p-6 flex items-start justify-between gap-4">
-                            <div>
-                                <h4 className="font-black text-slate-900">
+                        <div key={it.id} className="glass-card rounded-2xl lg:rounded-3xl p-4 sm:p-6 flex items-start justify-between gap-3 sm:gap-4">
+                            <div className="min-w-0">
+                                <h4 className="font-black text-slate-900 text-sm sm:text-base">
                                     {typeLabel[it.type] || it.type}
                                     {it.region ? ` · ${it.region}` : ''}
                                     {it.temperature ? ` · ${it.temperature}°C` : ''}
                                 </h4>
-                                <p className="text-xs text-slate-500 font-bold mt-1">{formatDate(it.created_at)}</p>
-                                <p className="text-sm text-slate-700 mt-2 whitespace-pre-wrap">{it.result}</p>
+                                <p className="text-[10px] sm:text-xs text-slate-500 font-bold mt-1">{formatDate(it.created_at)}</p>
+                                <p className="text-xs sm:text-sm text-slate-700 mt-2 whitespace-pre-wrap">{it.result}</p>
                             </div>
                         </div>
                     ))}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Send, Camera, Square, Sparkles } from 'lucide-react';
+import { Mic, Send, Camera, Square, Sparkles, Image, X } from 'lucide-react';
 import { saveDiagnostic } from '../api';
 
 type Msg = { text: string; isUser: boolean };
@@ -18,13 +18,16 @@ export const AnalysisPanel: React.FC = () => {
     const [isListening, setIsListening] = useState(false);
     const [messages, setMessages] = useState<Msg[]>([]);
     const [inputValue, setInputValue] = useState('');
-    const [waveHistory, setWaveHistory] = useState<number[]>([]);
-    const [_frequencyData, setFrequencyData] = useState<number[]>([]);
     const [timer, setTimer] = useState('00:00');
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const waveDataRef = useRef<number[]>([]);
 
     const [cameraActive, setCameraActive] = useState(false);
     const [photo, setPhoto] = useState<string | null>(null);
     const [analyzing, setAnalyzing] = useState<'audio' | 'photo' | 'chat' | null>(null);
+    const [showCameraChoice, setShowCameraChoice] = useState(false);
+    const isListeningRef = useRef(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const audioContextRef = useRef<AudioContext | null>(null);
     const analyserRef = useRef<AnalyserNode | null>(null);
@@ -48,6 +51,7 @@ export const AnalysisPanel: React.FC = () => {
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 streamRef.current = stream;
                 audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+                await audioContextRef.current.resume();
                 analyserRef.current = audioContextRef.current.createAnalyser();
                 analyserRef.current.fftSize = 2048;
                 analyserRef.current.smoothingTimeConstant = 0.8;
@@ -58,12 +62,16 @@ export const AnalysisPanel: React.FC = () => {
                 freqSamplesRef.current = [];
                 recorderRef.current = new MediaRecorder(stream);
                 recorderRef.current.ondataavailable = (e) => audioChunksRef.current.push(e.data);
+                recorderRef.current.onstop = async () => {
+                    const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                    if (blob.size > 0) await analyzeAudio(blob);
+                };
                 recorderRef.current.start();
 
+                isListeningRef.current = true;
                 setIsListening(true);
                 startTimeRef.current = Date.now();
-                setWaveHistory([]);
-                setFrequencyData([]);
+                waveDataRef.current = [];
 
                 const bufferLength = analyserRef.current.frequencyBinCount;
                 const dataArray = new Uint8Array(bufferLength);
@@ -74,9 +82,35 @@ export const AnalysisPanel: React.FC = () => {
                     analyserRef.current.getByteFrequencyData(dataArray);
                     const avgValue = Array.from(dataArray).reduce((a, b) => a + b, 0) / dataArray.length;
                     const height = Math.round(Math.max(4, (avgValue / 128) * 50));
-                    setWaveHistory((prev) => [...prev.slice(-199), height]);
+                    waveDataRef.current = [...waveDataRef.current.slice(-199), height];
 
-                    // Collect frequency band samples every ~500ms
+                    const canvas = canvasRef.current;
+                    if (canvas) {
+                        const ctx = canvas.getContext('2d');
+                        if (ctx) {
+                            const dpr = window.devicePixelRatio || 1;
+                            const w = canvas.clientWidth;
+                            const h = canvas.clientHeight;
+                            if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
+                                canvas.width = w * dpr;
+                                canvas.height = h * dpr;
+                                ctx.scale(dpr, dpr);
+                            }
+                            ctx.clearRect(0, 0, w, h);
+                            const data = waveDataRef.current;
+                            const barW = 2;
+                            const gap = 1;
+                            const totalW = data.length * (barW + gap);
+                            const startX = Math.max(0, w - totalW);
+                            ctx.fillStyle = '#ef4444';
+                            data.forEach((val, i) => {
+                                const x = startX + i * (barW + gap);
+                                const barH = Math.max(2, (val / 50) * h);
+                                ctx.fillRect(x, h - barH, barW, barH);
+                            });
+                        }
+                    }
+
                     sampleCount++;
                     if (sampleCount % 30 === 0) {
                         const nyquist = (audioContextRef.current?.sampleRate || 44100) / 2;
@@ -90,14 +124,13 @@ export const AnalysisPanel: React.FC = () => {
                             return count > 0 ? Math.round(sum / count) : 0;
                         };
 
-                        // Bee-relevant frequency bands
                         freqSamplesRef.current.push([
-                            band(50, 150),    // Low (normal hum, 100-260Hz activity)
-                            band(150, 350),   // Mid-low (workers)
-                            band(350, 500),   // Mid (queen tooting 350-500Hz)
-                            band(500, 1000),  // High-mid (queenless 478-1080Hz)
-                            band(1000, 3000), // High (stress, piping)
-                            band(3000, 8000), // Very high (Varroa wing beat ~300Hz but harmonics go higher)
+                            band(50, 150),
+                            band(150, 350),
+                            band(350, 500),
+                            band(500, 1000),
+                            band(1000, 3000),
+                            band(3000, 8000),
                         ]);
                     }
 
@@ -105,20 +138,18 @@ export const AnalysisPanel: React.FC = () => {
                     const seconds = Math.floor((diff / 1000) % 60);
                     const minutes = Math.floor((diff / (1000 * 60)) % 60);
                     setTimer(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);
-                    if (isListening) requestAnimationFrame(updateVisuals);
+                    if (isListeningRef.current) requestAnimationFrame(updateVisuals);
                 };
                 updateVisuals();
             } catch {
                 alert('Erro ao aceder ao microfone. Verifique se concedeu permissão.');
             }
         } else {
+            isListeningRef.current = false;
             setIsListening(false);
             recorderRef.current?.stop();
             if (audioContextRef.current) audioContextRef.current.close();
             streamRef.current?.getTracks().forEach((t) => t.stop());
-
-            const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-            if (blob.size > 0) await analyzeAudio(blob);
         }
     };
 
@@ -126,7 +157,6 @@ export const AnalysisPanel: React.FC = () => {
         try {
             setAnalyzing('audio');
 
-            // Compute average frequency bands from collected samples
             const samples = freqSamplesRef.current;
             let avgBands = [0, 0, 0, 0, 0, 0];
             if (samples.length > 0) {
@@ -176,14 +206,21 @@ export const AnalysisPanel: React.FC = () => {
         }
     };
 
+    const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            setPhoto(ev.target?.result as string);
+            setShowCameraChoice(false);
+        };
+        reader.readAsDataURL(file);
+    };
+
     const startCamera = async () => {
         try {
             if (!navigator.mediaDevices?.getUserMedia) {
                 alert('Câmara não suportada neste navegador. Use Chrome ou Safari.');
-                return;
-            }
-            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
-                alert('A câmara precisa de HTTPS para funcionar. Aceda via HTTPS.');
                 return;
             }
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -262,26 +299,22 @@ export const AnalysisPanel: React.FC = () => {
     };
 
     return (
-        <div className="glass-card rounded-[3rem] p-8">
-            <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+        <div className="glass-card rounded-3xl lg:rounded-[3rem] p-4 sm:p-6 lg:p-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                 <div>
                     <span className="text-primary-dark text-xs font-black uppercase tracking-[0.3em] mb-1 block">Diagnóstico</span>
-                    <h2 className="text-3xl font-black text-slate-900">Análise da Colmeia</h2>
+                    <h2 className="text-2xl sm:text-3xl font-black text-slate-900">Análise da Colmeia</h2>
                 </div>
-                <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-1 overflow-x-auto w-48 h-12 bg-black/20 rounded-xl px-2">
-                        {waveHistory.map((h, i) => (
-                            <div key={i} className="w-1 bg-red-500 rounded-full shrink-0" style={{ height: `${h}px` }} />
-                        ))}
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+                    <canvas ref={canvasRef} className="w-full sm:w-48 h-12 bg-black/20 rounded-xl" style={{ imageRendering: 'pixelated' }} />
+                    <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 sm:gap-1">
                         <span className={`text-[10px] font-black text-primary-dark transition-opacity ${isListening ? 'opacity-100' : 'opacity-0'}`}>{timer}</span>
                         <button
                             onClick={toggleListening}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-xl transition-all shadow-lg shadow-primary-dark/20 group ${isListening ? 'bg-red-600' : 'bg-primary-dark'} text-white`}
+                            className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-all shadow-lg shadow-primary-dark/20 group ${isListening ? 'bg-red-600' : 'bg-primary-dark'} text-white`}
                         >
-                            {isListening ? <Square className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-                            <span className="text-xs font-black uppercase tracking-widest">{isListening ? 'Parar' : 'Ouvir Enxame'}</span>
+                            {isListening ? <Square className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}
+                            <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">{isListening ? 'Parar' : 'Ouvir Enxame'}</span>
                         </button>
                     </div>
                 </div>
@@ -298,42 +331,42 @@ export const AnalysisPanel: React.FC = () => {
                     ) : photo ? (
                         <img src={photo} alt="colmeia" className="w-full h-full object-cover" />
                     ) : (
-                        <span className="text-slate-500 font-bold text-sm">Nenhuma imagem capturada</span>
+                        <span className="text-slate-500 font-bold text-xs sm:text-sm">Nenhuma imagem capturada</span>
                     )}
                 </div>
-                <div className="flex gap-3 mt-3">
+                <div className="flex flex-wrap gap-2 sm:gap-3 mt-3">
                     {!cameraActive ? (
-                        <button onClick={startCamera} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary-dark text-white font-black text-xs uppercase tracking-widest">
-                            <Camera className="w-4 h-4" /> Abrir Câmara
+                        <button onClick={() => setShowCameraChoice(true)} className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-primary-dark text-white font-black text-[10px] sm:text-xs uppercase tracking-widest">
+                            <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Abrir Câmara
                         </button>
                     ) : (
-                        <button onClick={capturePhoto} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 text-white font-black text-xs uppercase tracking-widest">
-                            <Camera className="w-4 h-4" /> Capturar
+                        <button onClick={capturePhoto} className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-red-600 text-white font-black text-[10px] sm:text-xs uppercase tracking-widest">
+                            <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Capturar
                         </button>
                     )}
                     {photo && !cameraActive && (
                         <>
-                            <button onClick={startCamera} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-slate-600 text-white font-black text-xs uppercase tracking-widest">
-                                <Camera className="w-4 h-4" /> Repetir Foto
+                            <button onClick={() => setShowCameraChoice(true)} className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-slate-600 text-white font-black text-[10px] sm:text-xs uppercase tracking-widest">
+                                <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Repetir Foto
                             </button>
-                            <button onClick={analyzePhoto} disabled={analyzing === 'photo'} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-slate-900 font-black text-xs uppercase tracking-widest disabled:opacity-50">
-                                <Sparkles className="w-4 h-4" /> {analyzing === 'photo' ? 'Analisando...' : 'Analisar com IA'}
+                            <button onClick={analyzePhoto} disabled={analyzing === 'photo'} className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-primary text-slate-900 font-black text-[10px] sm:text-xs uppercase tracking-widest disabled:opacity-50">
+                                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {analyzing === 'photo' ? 'Analisando...' : 'Analisar com IA'}
                             </button>
                         </>
                     )}
                 </div>
             </div>
 
-            <p className="text-xl lg:text-2xl font-medium text-slate-800 leading-tight mb-8 italic border-l-4 border-primary-dark pl-6">
+            <p className="text-base lg:text-xl font-medium text-slate-800 leading-tight mb-6 lg:mb-8 italic border-l-4 border-primary-dark pl-4 lg:pl-6">
                 "Use <span className="text-primary-dark font-black">Ouvir Enxame</span> para áudio e <span className="text-primary-dark font-black">Câmara</span> para imagem. O Groq gera o diagnóstico abaixo."
             </p>
 
-            <div className="glass-card rounded-[2rem] p-6 flex flex-col h-[420px]">
-                <h3 className="text-lg font-black text-slate-900 mb-4 flex items-center gap-3">Tirar Dúvida com IA</h3>
-                <div ref={chatMessagesRef} className="bg-black/5 rounded-2xl p-4 mb-4 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-3">
+            <div className="glass-card rounded-2xl lg:rounded-[2rem] p-4 sm:p-6 flex flex-col h-[350px] sm:h-[420px]">
+                <h3 className="text-base lg:text-lg font-black text-slate-900 mb-3 lg:mb-4 flex items-center gap-3">Tirar Dúvida com IA</h3>
+                <div ref={chatMessagesRef} className="bg-black/5 rounded-2xl p-3 sm:p-4 mb-3 lg:mb-4 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-3">
                     {messages.map((m, i) => (
                         <div key={i} className={`flex ${m.isUser ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`${m.isUser ? 'bg-primary-dark text-white' : 'bg-white/80 text-slate-800'} p-3 rounded-2xl shadow-sm max-w-[90%] text-xs font-medium whitespace-pre-wrap`}>
+                            <div className={`${m.isUser ? 'bg-primary-dark text-white' : 'bg-white/80 text-slate-800'} p-2.5 sm:p-3 rounded-2xl shadow-sm max-w-[90%] text-xs font-medium whitespace-pre-wrap`}>
                                 {m.text}
                             </div>
                         </div>
@@ -347,13 +380,56 @@ export const AnalysisPanel: React.FC = () => {
                         onChange={(e) => setInputValue(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                         placeholder="Sua dúvida..."
-                        className="flex-1 bg-white/50 border-none rounded-2xl py-3 px-5 text-sm font-bold focus:ring-primary-dark"
+                        className="flex-1 bg-white/50 border-none rounded-2xl py-2.5 sm:py-3 px-4 sm:px-5 text-sm font-bold focus:ring-primary-dark"
                     />
-                    <button onClick={handleSendMessage} className="p-3 bg-primary text-slate-900 rounded-2xl hover:brightness-110 transition-all">
-                        <Send className="w-5 h-5" />
+                    <button onClick={handleSendMessage} className="p-2.5 sm:p-3 bg-primary text-slate-900 rounded-2xl hover:brightness-110 transition-all">
+                        <Send className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                 </div>
             </div>
+
+            <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileSelect}
+            />
+
+            {showCameraChoice && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowCameraChoice(false)}>
+                    <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-lg font-black text-slate-900">Imagem da Colmeia</h3>
+                            <button onClick={() => setShowCameraChoice(false)} className="p-1 rounded-lg hover:bg-slate-100">
+                                <X className="w-5 h-5 text-slate-500" />
+                            </button>
+                        </div>
+                        <div className="space-y-3">
+                            <button
+                                onClick={() => { setShowCameraChoice(false); startCamera(); }}
+                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-primary-dark text-white hover:brightness-110 transition-all"
+                            >
+                                <Camera className="w-6 h-6" />
+                                <div className="text-left">
+                                    <span className="text-sm font-black block">Tirar Foto</span>
+                                    <span className="text-[10px] font-bold opacity-80">Abrir a câmara do dispositivo</span>
+                                </div>
+                            </button>
+                            <button
+                                onClick={() => { setShowCameraChoice(false); fileInputRef.current?.click(); }}
+                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-slate-100 text-slate-900 hover:bg-slate-200 transition-all"
+                            >
+                                <Image className="w-6 h-6" />
+                                <div className="text-left">
+                                    <span className="text-sm font-black block">Carregar Foto</span>
+                                    <span className="text-[10px] font-bold opacity-60">Escolher da galeria ou ficheiros</span>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

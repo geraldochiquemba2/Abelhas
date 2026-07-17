@@ -29,3 +29,7 @@ dist-ssr
 
 # Server
 server/*.log
+cert.pem
+key.pem
+*.cjs
+*.mjs

@@ -52,3 +52,14 @@ body {
   background: rgba(255, 217, 0, 0.2);
   border-radius: 10px;
 }
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 217, 0, 0.3);
+}
+
+@media (max-width: 1023px) {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.85) !important;
+  }
+}

@@ -1,9 +1,13 @@
 import 'dotenv/config';
+import https from 'https';
+import fs from 'fs';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { pool } from './db.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.use(cors());
@@ -79,8 +83,8 @@ app.post('/api/vision', async (req, res) => {
         const r = await fetch(`${GROQ_URL}/chat/completions`, {
             method: 'POST',
             headers: groqHeaders(),
-                    body: JSON.stringify({
-                        model: model || 'meta-llama/llama-4-scout-17b-16e-instruct',
+            body: JSON.stringify({
+                model: model || 'meta-llama/llama-4-scout-17b-16e-instruct',
                 messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: image } }] }],
             }),
         });
@@ -89,7 +93,6 @@ app.post('/api/vision', async (req, res) => {
         res.status(500).json({ error: e.message });
     }
 });
-
 
 app.get('/api/diagnostics', async (_req, res) => {
     try {
@@ -114,12 +117,33 @@ app.post('/api/diagnostics', async (req, res) => {
     }
 });
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(__dirname, '..', 'dist');
 app.use(express.static(dist));
 app.get('/{*splat}', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
 
 const port = process.env.PORT || 3001;
+
+const certPath = path.join(__dirname, '..', 'cert.pem');
+const keyPath = path.join(__dirname, '..', 'key.pem');
+
+const startServer = (app, port) => {
+    if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
+        const options = {
+            key: fs.readFileSync(keyPath),
+            cert: fs.readFileSync(certPath),
+        };
+        https.createServer(options, app).listen(port, '0.0.0.0', () => {
+            console.log(`HTTPS a correr em https://0.0.0.0:${port}`);
+        });
+    } else {
+        import('http').then(({ default: http }) => {
+            http.createServer(app).listen(port, '0.0.0.0', () => {
+                console.log(`HTTP a correr em http://0.0.0.0:${port}`);
+            });
+        });
+    }
+};
+
 initDb()
-    .then(() => app.listen(port, () => console.log(`Servidor a correr na porta ${port}`)))
+    .then(() => startServer(app, port))
     .catch((e) => { console.error('Erro ao iniciar:', e); process.exit(1); });

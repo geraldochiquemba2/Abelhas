@@ -125,21 +125,20 @@ const Thermal: React.FC = () => {
 
     return (
         <Layout>
-            <div className="flex items-center justify-between gap-6 mb-12 flex-wrap">
+            <div className="flex items-center justify-between gap-4 sm:gap-6 mb-6 sm:mb-12 flex-wrap">
                 <div>
-                    <h1 className="text-4xl lg:text-5xl font-black tracking-tight text-slate-900 leading-tight">
+                    <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-slate-900 leading-tight">
                         Saúde <span className="text-primary-dark">Térmica</span>
                     </h1>
-                    <p className="text-slate-700 font-medium text-lg">Classificação térmica via Groq com clima regional de Angola.</p>
+                    <p className="text-slate-700 font-medium text-base sm:text-lg">Classificação térmica via Groq com clima regional de Angola.</p>
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Mapa térmico + input */}
-                <div className="glass-card rounded-[2rem] p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                <div className="glass-card rounded-2xl lg:rounded-[2rem] p-4 sm:p-6">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-bold text-slate-900">Mapa Térmico da Colmeia</h2>
-                        <span className="text-sm font-bold text-primary-dark">{center.toFixed(1)} °C</span>
+                        <h2 className="text-base lg:text-lg font-bold text-slate-900">Mapa Térmico da Colmeia</h2>
+                        <span className="text-xs sm:text-sm font-bold text-primary-dark">{center.toFixed(1)} °C</span>
                     </div>
                     <div
                         className="grid rounded-xl overflow-hidden"
@@ -161,13 +160,13 @@ const Thermal: React.FC = () => {
                         <span className="text-xs font-bold text-slate-600">{T_MAX}°C</span>
                     </div>
 
-                    <div className="mt-6 space-y-4">
+                    <div className="mt-4 sm:mt-6 space-y-3 sm:space-y-4">
                         <div>
                             <label className="text-xs font-black uppercase tracking-widest text-primary-dark">Região de Angola</label>
                             <select
                                 value={region.name}
                                 onChange={(e) => setRegion(REGIONS.find((r) => r.name === e.target.value)!)}
-                                className="w-full mt-1 bg-white/60 border border-slate-200 rounded-2xl py-3 px-4 text-sm font-bold focus:ring-primary-dark"
+                                className="w-full mt-1 bg-white/60 border border-slate-200 rounded-2xl py-2.5 sm:py-3 px-3 sm:px-4 text-sm font-bold focus:ring-primary-dark"
                             >
                                 {REGIONS.map((r) => (
                                     <option key={r.name} value={r.name}>{r.name}</option>
@@ -185,28 +184,27 @@ const Thermal: React.FC = () => {
                                 value={hiveTemp}
                                 onChange={(e) => setHiveTemp(e.target.value)}
                                 placeholder="ex.: 35.2"
-                                className="w-full mt-1 bg-white/60 border border-slate-200 rounded-2xl py-3 px-4 text-sm font-bold focus:ring-primary-dark"
+                                className="w-full mt-1 bg-white/60 border border-slate-200 rounded-2xl py-2.5 sm:py-3 px-3 sm:px-4 text-sm font-bold focus:ring-primary-dark"
                             />
                         </div>
                         <button
                             onClick={classify}
                             disabled={loading}
-                            className="w-full py-3 rounded-xl bg-primary-dark text-white font-black text-xs uppercase tracking-widest disabled:opacity-50"
+                            className="w-full py-2.5 sm:py-3 rounded-xl bg-primary-dark text-white font-black text-xs uppercase tracking-widest disabled:opacity-50"
                         >
                             {loading ? 'A classificar...' : 'Classificar com Groq'}
                         </button>
                     </div>
                 </div>
 
-                {/* Diagnóstico */}
-                <div className="glass-card rounded-[2rem] p-6 flex flex-col">
-                    <h2 className="text-lg font-bold text-slate-900 mb-4">Diagnóstico Térmico</h2>
+                <div className="glass-card rounded-2xl lg:rounded-[2rem] p-4 sm:p-6 flex flex-col">
+                    <h2 className="text-base lg:text-lg font-bold text-slate-900 mb-4">Diagnóstico Térmico</h2>
                     {diagnosis ? (
-                        <div className="bg-white/70 rounded-2xl p-6 text-sm font-medium text-slate-800 whitespace-pre-wrap leading-relaxed flex-1">
+                        <div className="bg-white/70 rounded-2xl p-4 sm:p-6 text-sm font-medium text-slate-800 whitespace-pre-wrap leading-relaxed flex-1">
                             {diagnosis}
                         </div>
                     ) : (
-                        <div className="bg-black/5 rounded-2xl p-6 text-slate-500 font-bold text-sm italic flex-1 flex items-center justify-center">
+                        <div className="bg-black/5 rounded-2xl p-4 sm:p-6 text-slate-500 font-bold text-sm italic flex-1 flex items-center justify-center">
                             Insere a temperatura interna e clica em "Classificar com Groq".
                         </div>
                     )}

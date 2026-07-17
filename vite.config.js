@@ -1,13 +1,15 @@
 import { defineConfig } from 'vite';
 
 export default defineConfig({
-    preview: {
-        allowedHosts: true,
-    },
     server: {
+        host: '0.0.0.0',
+        port: 5173,
         allowedHosts: true,
         proxy: {
             '/api': 'http://localhost:3001',
         },
+    },
+    preview: {
+        allowedHosts: true,
     },
 });
