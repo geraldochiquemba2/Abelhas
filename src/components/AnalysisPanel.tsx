@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Send, Camera, Square, Sparkles, Image, X } from 'lucide-react';
+import { Mic, Send, Square, Sparkles, Image } from 'lucide-react';
 import { saveDiagnostic } from '../api';
 
 type Msg = { text: string; isUser: boolean };
@@ -22,10 +22,8 @@ export const AnalysisPanel: React.FC = () => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const waveDataRef = useRef<number[]>([]);
 
-    const [cameraActive, setCameraActive] = useState(false);
     const [photo, setPhoto] = useState<string | null>(null);
     const [analyzing, setAnalyzing] = useState<'audio' | 'photo' | 'chat' | null>(null);
-    const [showCameraChoice, setShowCameraChoice] = useState(false);
     const isListeningRef = useRef(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -35,7 +33,6 @@ export const AnalysisPanel: React.FC = () => {
     const recorderRef = useRef<MediaRecorder | null>(null);
     const audioChunksRef = useRef<Blob[]>([]);
     const freqSamplesRef = useRef<number[][]>([]);
-    const videoRef = useRef<HTMLVideoElement>(null);
     const chatMessagesRef = useRef<HTMLDivElement>(null);
     const startTimeRef = useRef<number>(0);
 
@@ -212,46 +209,8 @@ export const AnalysisPanel: React.FC = () => {
         const reader = new FileReader();
         reader.onload = (ev) => {
             setPhoto(ev.target?.result as string);
-            setShowCameraChoice(false);
         };
         reader.readAsDataURL(file);
-    };
-
-    const startCamera = async () => {
-        try {
-            if (!navigator.mediaDevices?.getUserMedia) {
-                alert('Câmara não suportada neste navegador. Use Chrome ou Safari.');
-                return;
-            }
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
-            });
-            streamRef.current = stream;
-            if (videoRef.current) {
-                videoRef.current.srcObject = stream;
-                videoRef.current.play();
-            }
-            setCameraActive(true);
-        } catch (e: any) {
-            if (e.name === 'NotAllowedError') {
-                alert('Permissão da câmara negada. Conceda permissão nas definições do navegador.');
-            } else if (e.name === 'NotFoundError') {
-                alert('Nenhuma câmara encontrada no dispositivo.');
-            } else {
-                alert('Erro ao aceder à câmara: ' + e.message);
-            }
-        }
-    };
-
-    const capturePhoto = () => {
-        if (!videoRef.current) return;
-        const canvas = document.createElement('canvas');
-        canvas.width = videoRef.current.videoWidth;
-        canvas.height = videoRef.current.videoHeight;
-        canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
-        setPhoto(canvas.toDataURL('image/jpeg', 0.8));
-        streamRef.current?.getTracks().forEach((t) => t.stop());
-        setCameraActive(false);
     };
 
     const analyzePhoto = async () => {
@@ -326,33 +285,20 @@ export const AnalysisPanel: React.FC = () => {
                     {analyzing === 'photo' && <span className="text-xs text-primary-dark font-bold animate-pulse">Analisando imagem...</span>}
                 </div>
                 <div className="rounded-2xl overflow-hidden bg-black/10 aspect-video flex items-center justify-center">
-                    {cameraActive ? (
-                        <video ref={videoRef} className="w-full h-full object-cover" muted />
-                    ) : photo ? (
+                    {photo ? (
                         <img src={photo} alt="colmeia" className="w-full h-full object-cover" />
                     ) : (
-                        <span className="text-slate-500 font-bold text-xs sm:text-sm">Nenhuma imagem capturada</span>
+                        <span className="text-slate-500 font-bold text-xs sm:text-sm">Nenhuma imagem carregada</span>
                     )}
                 </div>
                 <div className="flex flex-wrap gap-2 sm:gap-3 mt-3">
-                    {!cameraActive ? (
-                        <button onClick={() => setShowCameraChoice(true)} className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-primary-dark text-white font-black text-[10px] sm:text-xs uppercase tracking-widest">
-                            <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Abrir Câmara
+                    <button onClick={() => fileInputRef.current?.click()} className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-primary-dark text-white font-black text-[10px] sm:text-xs uppercase tracking-widest">
+                        <Image className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {photo ? 'Carregar Outra' : 'Carregar Foto'}
+                    </button>
+                    {photo && (
+                        <button onClick={analyzePhoto} disabled={analyzing === 'photo'} className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-primary text-slate-900 font-black text-[10px] sm:text-xs uppercase tracking-widest disabled:opacity-50">
+                            <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {analyzing === 'photo' ? 'Analisando...' : 'Analisar com IA'}
                         </button>
-                    ) : (
-                        <button onClick={capturePhoto} className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-red-600 text-white font-black text-[10px] sm:text-xs uppercase tracking-widest">
-                            <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Capturar
-                        </button>
-                    )}
-                    {photo && !cameraActive && (
-                        <>
-                            <button onClick={() => setShowCameraChoice(true)} className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-slate-600 text-white font-black text-[10px] sm:text-xs uppercase tracking-widest">
-                                <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Repetir Foto
-                            </button>
-                            <button onClick={analyzePhoto} disabled={analyzing === 'photo'} className="flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-primary text-slate-900 font-black text-[10px] sm:text-xs uppercase tracking-widest disabled:opacity-50">
-                                <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {analyzing === 'photo' ? 'Analisando...' : 'Analisar com IA'}
-                            </button>
-                        </>
                     )}
                 </div>
             </div>
@@ -396,40 +342,6 @@ export const AnalysisPanel: React.FC = () => {
                 onChange={handleFileSelect}
             />
 
-            {showCameraChoice && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowCameraChoice(false)}>
-                    <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl" onClick={(e) => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-black text-slate-900">Imagem da Colmeia</h3>
-                            <button onClick={() => setShowCameraChoice(false)} className="p-1 rounded-lg hover:bg-slate-100">
-                                <X className="w-5 h-5 text-slate-500" />
-                            </button>
-                        </div>
-                        <div className="space-y-3">
-                            <button
-                                onClick={() => { setShowCameraChoice(false); startCamera(); }}
-                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-primary-dark text-white hover:brightness-110 transition-all"
-                            >
-                                <Camera className="w-6 h-6" />
-                                <div className="text-left">
-                                    <span className="text-sm font-black block">Tirar Foto</span>
-                                    <span className="text-[10px] font-bold opacity-80">Abrir a câmara do dispositivo</span>
-                                </div>
-                            </button>
-                            <button
-                                onClick={() => { setShowCameraChoice(false); fileInputRef.current?.click(); }}
-                                className="w-full flex items-center gap-4 p-4 rounded-2xl bg-slate-100 text-slate-900 hover:bg-slate-200 transition-all"
-                            >
-                                <Image className="w-6 h-6" />
-                                <div className="text-left">
-                                    <span className="text-sm font-black block">Carregar Foto</span>
-                                    <span className="text-[10px] font-bold opacity-60">Escolher da galeria ou ficheiros</span>
-                                </div>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 };
