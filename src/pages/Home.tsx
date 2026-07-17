@@ -104,9 +104,6 @@ const Home: React.FC = () => {
                                 Começar Diagnóstico
                                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                             </button>
-                            <button className="flex items-center justify-center gap-2 bg-white/10 backdrop-blur border border-white/20 text-white px-6 py-3 rounded-lg text-sm font-bold hover:bg-white/20 transition-all shadow-sm">
-                                Ver Demo
-                            </button>
                         </div>
                         <div className="mt-4 flex items-center gap-6 border-t border-white/10 pt-4 w-fit">
                             <div className="flex -space-x-2">
