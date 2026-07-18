@@ -11,6 +11,8 @@ const callChat = async (messages: any[], model = 'llama-3.3-70b-versatile') => {
         body: JSON.stringify({ messages, model }),
     });
     const data = await res.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    if (!data.choices?.[0]?.message?.content) throw new Error('Resposta inválida da API. Verifica a GROQ_API_KEY.');
     return data.choices[0].message.content;
 };
 
@@ -208,7 +210,17 @@ export const AnalysisPanel: React.FC = () => {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (ev) => {
-            setPhoto(ev.target?.result as string);
+            const img = new window.Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const maxW = 1024;
+                const ratio = Math.min(maxW / img.width, maxW / img.height, 1);
+                canvas.width = img.width * ratio;
+                canvas.height = img.height * ratio;
+                canvas.getContext('2d')?.drawImage(img, 0, 0, canvas.width, canvas.height);
+                setPhoto(canvas.toDataURL('image/jpeg', 0.7));
+            };
+            img.src = ev.target?.result as string;
         };
         reader.readAsDataURL(file);
     };
@@ -226,6 +238,8 @@ export const AnalysisPanel: React.FC = () => {
                 }),
             });
             const data = await res.json();
+            if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+            if (!data.choices?.[0]?.message?.content) throw new Error('Resposta inválida da API de visão.');
             const diagnosis = data.choices[0].message.content;
             setMessages((prev) => [...prev, { text: `📷 ${diagnosis}`, isUser: false }]);
             saveDiagnostic({ type: 'image', result: diagnosis }).catch(() => {});

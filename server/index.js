@@ -11,7 +11,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
 
 const initDb = async () => {
     if (!process.env.DATABASE_URL) {
@@ -80,16 +80,20 @@ app.post('/api/chat', async (req, res) => {
 app.post('/api/vision', async (req, res) => {
     try {
         const { image, prompt, model } = req.body || {};
+        console.log('Vision request - image length:', image?.length, 'model:', model);
         const r = await fetch(`${GROQ_URL}/chat/completions`, {
             method: 'POST',
             headers: groqHeaders(),
-                body: JSON.stringify({
-                    model: model || 'qwen/qwen3.6-27b',
-                    messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: image } }] }],
+            body: JSON.stringify({
+                model: model || 'qwen/qwen3.6-27b',
+                messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: image } }] }],
             }),
         });
-        res.json(await r.json());
+        const result = await r.json();
+        console.log('Vision result:', JSON.stringify(result).substring(0, 500));
+        res.json(result);
     } catch (e) {
+        console.error('Vision error:', e.message);
         res.status(500).json({ error: e.message });
     }
 });
