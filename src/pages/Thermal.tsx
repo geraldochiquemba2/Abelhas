@@ -113,6 +113,8 @@ const Thermal: React.FC = () => {
                 }),
             });
             const data = await res.json();
+            if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+            if (!data.choices?.[0]?.message?.content) throw new Error('Resposta inválida da API.');
             const text = data.choices[0].message.content;
             setDiagnosis(text);
             saveDiagnostic({ type: 'thermal', region: region.name, temperature: h, result: text }).catch(() => {});

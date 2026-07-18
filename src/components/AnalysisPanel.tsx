@@ -26,6 +26,7 @@ export const AnalysisPanel: React.FC = () => {
 
     const [photo, setPhoto] = useState<string | null>(null);
     const [analyzing, setAnalyzing] = useState<'audio' | 'photo' | 'chat' | null>(null);
+    const [pendingAudioBlob, setPendingAudioBlob] = useState<Blob | null>(null);
     const isListeningRef = useRef(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -61,9 +62,9 @@ export const AnalysisPanel: React.FC = () => {
                 freqSamplesRef.current = [];
                 recorderRef.current = new MediaRecorder(stream);
                 recorderRef.current.ondataavailable = (e) => audioChunksRef.current.push(e.data);
-                recorderRef.current.onstop = async () => {
+                recorderRef.current.onstop = () => {
                     const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-                    if (blob.size > 0) await analyzeAudio(blob);
+                    if (blob.size > 0) setPendingAudioBlob(blob);
                 };
                 recorderRef.current.start();
 
@@ -152,7 +153,7 @@ export const AnalysisPanel: React.FC = () => {
         }
     };
 
-    const analyzeAudio = async (_blob: Blob) => {
+    const analyzeAudio = async (blob: Blob) => {
         try {
             setAnalyzing('audio');
 
@@ -176,38 +177,52 @@ export const AnalysisPanel: React.FC = () => {
             ];
             const freqSummary = bandLabels.map((l, i) => `${l}: ${avgBands[i]}/255`).join('\n');
 
+            const buffer = await blob.arrayBuffer();
+            const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+
+            let transcription = '';
+            try {
+                const tRes = await fetch('/api/transcribe', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ audioBase64: base64, mime: blob.type || 'audio/webm' }),
+                });
+                const tData = await tRes.json();
+                transcription = tData.text || '';
+            } catch {
+                transcription = '(transcrição indisponível)';
+            }
+
             const diagnosis = await callChat([
                 {
                     role: 'system',
                     content:
-                        'És um especialista em apicultura e bioacústica de abelhas. Recebes dados de frequência de áudio de uma gravação de colmeia.\n\n' +
-                        'IMPORTANTE: Analisa OS VALORES REAIS. Se os valores de frequência estiverem tous (próximos de 0/255), significa que NÃO há atividade significativa de abelhas. Se os valores estiverem elevados em bandas específicas, indica atividade nessa faixa.\n\n' +
+                        'És um especialista em apicultura e bioacústica de abelhas. Recebes dados de uma gravação de áudio de uma colmeia, incluindo transcrição do áudio e dados de frequência.\n\n' +
+                        'DADOS DISPONÍVEIS:\n' +
+                        '1. TRANSCRIÇÃO do áudio gravado (o que foi dito ou ouvido)\n' +
+                        '2. DADOS DE FREQUÊNCIA (6 bandas de frequência com valores de 0-255)\n\n' +
+                        'INSTRUÇÕES:\n' +
+                        '- Se a transcrição contiver voz humana, palmas, ruído de ambiente, ou algo que NÃO são abelhas, INDICA ISSO CLARAMENTE.\n' +
+                        '- Se forem sons de abelhas (zumbido, piping, tooting), analisa como colmeia.\n' +
+                        '- Analisa os valores reais de frequência. Valores < 30/255 = silêncio. Valores > 100/255 = atividade significativa.\n\n' +
                         'Indica:\n' +
-                        '1. Estado da rainha (presente/ausente/enxameio)\n' +
-                        '2. Nível de atividade da colónia (mínimo/médio/alto)\n' +
-                        '3. Sinais de enxameio, stress ou pragas\n' +
-                        '4. Recomendação prática\n\n' +
-                        'Valores de referência:\n' +
-                        '- Atividade normal de colmeia: 100-200/255 nas bandas 50-350Hz\n' +
-                        '- Rainha "tooting": pico 350-500Hz\n' +
-                        '- Rainha ausente: pico 478-1080Hz\n' +
-                        '- Colmeia sem abelhas ou ambíente silencioso: valores < 30/255 em todas as bandas\n' +
-                        '- Som humano/voz: concentração na banda 150-1000Hz com valores elevados\n' +
-                        '- Som de palmas/clapping: pico em frequências altas (1000-8000Hz)\n\n' +
-                        'Se os dados mostrarem pouca atividade ou padrões que não correspondem a uma colmeia real, indica isso claramente. Sê honesto e direto. Responde em português.',
+                        '1. O que foi detetado no áudio (abelhas, voz humana, outro som)\n' +
+                        '2. Estado da rainha se aplicável\n' +
+                        '3. Nível de atividade\n' +
+                        '4. Recomendação\n\n' +
+                        'Responde em português. Sê honesto.',
                 },
                 {
                     role: 'user',
                     content:
-                        `DADOS REAIS DE FREQUÊNCIA - Gravação de áudio (${durationSec}s, ${samples.length} amostras coletadas a cada ~500ms):\n\n` +
-                        freqSummary + '\n\n' +
-                        'Cada valor é a média de amplitude na banda de frequência (0=silêncio, 255=máximo).\n' +
-                        'Os dados acima representam o que foi DETETADO no áudio gravado. Analisa os valores numéricos reais, não assumes nada.\n\n' +
-                        'Dá o diagnóstico com base nos dados numéricos.',
+                        `GRAVAÇÃO DE ÁUDIO (${durationSec}s)\n\n` +
+                        `--- TRANSCRIÇÃO ---\n${transcription || '(sem transcrição - apenas sons não verbais)'}\n\n` +
+                        `--- DADOS DE FREQUÊNCIA ---\n${freqSummary}\n\n` +
+                        `--- ANÁLISE ---\nBaseado na transcrição e nos dados de frequência, diagnostica o que foi gravado.`,
                 },
             ]);
             setMessages((prev) => [...prev, { text: `🔊 Diagnóstico por áudio:\n\n${diagnosis}`, isUser: false }]);
-            saveDiagnostic({ type: 'audio', input: freqSummary, result: diagnosis }).catch(() => {});
+            saveDiagnostic({ type: 'audio', input: freqSummary + '\n\nTranscrição: ' + transcription, result: diagnosis }).catch(() => {});
         } catch (e: any) {
             alert('Erro na análise de áudio: ' + e.message);
         } finally {
@@ -252,7 +267,7 @@ export const AnalysisPanel: React.FC = () => {
             if (!data.choices?.[0]?.message?.content) throw new Error('Resposta inválida da API de visão.');
             const diagnosis = data.choices[0].message.content;
             setMessages((prev) => [...prev, { text: `📷 ${diagnosis}`, isUser: false }]);
-            saveDiagnostic({ type: 'image', result: diagnosis }).catch(() => {});
+            saveDiagnostic({ type: 'image', result: diagnosis, image: photo }).catch(() => {});
         } catch (e: any) {
             alert('Erro: ' + e.message);
         } finally {
@@ -292,13 +307,41 @@ export const AnalysisPanel: React.FC = () => {
                     <canvas ref={canvasRef} className="w-full sm:w-48 h-12 bg-black/20 rounded-xl" style={{ imageRendering: 'pixelated' }} />
                     <div className="flex flex-row sm:flex-col items-center sm:items-end gap-2 sm:gap-1">
                         <span className={`text-[10px] font-black text-primary-dark transition-opacity ${isListening ? 'opacity-100' : 'opacity-0'}`}>{timer}</span>
-                        <button
-                            onClick={toggleListening}
-                            className={`flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-all shadow-lg shadow-primary-dark/20 group ${isListening ? 'bg-red-600' : 'bg-primary-dark'} text-white`}
-                        >
-                            {isListening ? <Square className="w-4 h-4 sm:w-5 sm:h-5" /> : <Mic className="w-4 h-4 sm:w-5 sm:h-5" />}
-                            <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">{isListening ? 'Parar' : 'Ouvir Enxame'}</span>
-                        </button>
+                        {isListening ? (
+                            <button
+                                onClick={toggleListening}
+                                className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-all shadow-lg shadow-primary-dark/20 bg-red-600 text-white"
+                            >
+                                <Square className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">Parar</span>
+                            </button>
+                        ) : pendingAudioBlob ? (
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => { setPendingAudioBlob(null); toggleListening(); }}
+                                    className="flex items-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl transition-all bg-slate-500 text-white"
+                                >
+                                    <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">Repetir</span>
+                                </button>
+                                <button
+                                    onClick={async () => { const blob = pendingAudioBlob; setPendingAudioBlob(null); await analyzeAudio(blob); }}
+                                    disabled={analyzing === 'audio'}
+                                    className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-all shadow-lg shadow-primary-dark/20 bg-primary-dark text-white disabled:opacity-50"
+                                >
+                                    <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
+                                    <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">{analyzing === 'audio' ? 'Analisando...' : 'Analisar'}</span>
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={toggleListening}
+                                className="flex items-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl transition-all shadow-lg shadow-primary-dark/20 bg-primary-dark text-white"
+                            >
+                                <Mic className="w-4 h-4 sm:w-5 sm:h-5" />
+                                <span className="text-[10px] sm:text-xs font-black uppercase tracking-widest">Ouvir Enxame</span>
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

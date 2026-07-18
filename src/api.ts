@@ -5,6 +5,7 @@ export type Diagnostic = {
     result: string;
     region: string | null;
     temperature: number | null;
+    image: string | null;
     created_at: string;
 };
 
@@ -28,6 +29,7 @@ export async function saveDiagnostic(d: Partial<Diagnostic>): Promise<Diagnostic
         result: d.result || '',
         region: d.region ?? null,
         temperature: d.temperature ?? null,
+        image: d.image ?? null,
         created_at: new Date().toISOString(),
     };
     const arr = load();
