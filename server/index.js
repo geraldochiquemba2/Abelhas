@@ -83,9 +83,9 @@ app.post('/api/vision', async (req, res) => {
         const r = await fetch(`${GROQ_URL}/chat/completions`, {
             method: 'POST',
             headers: groqHeaders(),
-            body: JSON.stringify({
-                model: model || 'meta-llama/llama-4-scout-17b-16e-instruct',
-                messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: image } }] }],
+                body: JSON.stringify({
+                    model: model || 'qwen/qwen3.6-27b',
+                    messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: image } }] }],
             }),
         });
         res.json(await r.json());
