@@ -38,6 +38,29 @@ const initDb = async () => {
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
+let latestBeeData = null;
+const beeDataHistory = [];
+
+app.post('/api/beedata', (req, res) => {
+    try {
+        const data = req.body;
+        data.received_at = new Date().toISOString();
+        latestBeeData = data;
+        beeDataHistory.unshift(data);
+        if (beeDataHistory.length > 500) beeDataHistory.length = 500;
+        res.json({ ok: true });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.get('/api/beedata', (_req, res) => {
+    res.json({
+        current: latestBeeData,
+        history: beeDataHistory.slice(0, 100),
+    });
+});
+
 const GROQ_URL = 'https://api.groq.com/openai/v1';
 const groqHeaders = () => ({
     Authorization: `Bearer ${process.env.GROQ_API_KEY}`,

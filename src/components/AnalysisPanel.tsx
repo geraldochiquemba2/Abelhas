@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Send, Square, Sparkles, Image } from 'lucide-react';
-import { saveDiagnostic } from '../api';
+import { saveDiagnostic, saveAlert, requestNotificationPermission, showPushNotification, analyzeDiagnosticForAlerts } from '../api';
 
 type Msg = { text: string; isUser: boolean };
 
@@ -44,6 +44,10 @@ export const AnalysisPanel: React.FC = () => {
             chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
         }
     }, [messages]);
+
+    useEffect(() => {
+        requestNotificationPermission();
+    }, []);
 
     const toggleListening = async () => {
         if (!isListening) {
@@ -258,7 +262,13 @@ export const AnalysisPanel: React.FC = () => {
                 },
             ]);
             setMessages((prev) => [...prev, { text: `🔊 Diagnóstico por áudio:\n\n${diagnosis}`, isUser: false }]);
-            saveDiagnostic({ type: 'audio', input: freqSummary + '\n\nTranscrição: ' + transcription, result: diagnosis }).catch(() => {});
+            const diag = await saveDiagnostic({ type: 'audio', input: freqSummary + '\n\nTranscrição: ' + transcription, result: diagnosis });
+
+            const alerts = analyzeDiagnosticForAlerts(diagnosis, 'audio');
+            for (const a of alerts) {
+                const saved = await saveAlert({ ...a, diagnosticId: diag.id });
+                showPushNotification(saved.title, saved.message, saved.level);
+            }
         } catch (e: any) {
             alert('Erro na análise de áudio: ' + e.message);
         } finally {
@@ -331,7 +341,13 @@ export const AnalysisPanel: React.FC = () => {
             if (!data.choices?.[0]?.message?.content) throw new Error('Resposta inválida da API de visão.');
             const diagnosis = data.choices[0].message.content;
             setMessages((prev) => [...prev, { text: `📷 ${diagnosis}`, isUser: false }]);
-            saveDiagnostic({ type: 'image', result: diagnosis, image: photo }).catch(() => {});
+            const diag = await saveDiagnostic({ type: 'image', result: diagnosis, image: photo });
+
+            const alerts = analyzeDiagnosticForAlerts(diagnosis, 'vision');
+            for (const a of alerts) {
+                const saved = await saveAlert({ ...a, diagnosticId: diag.id });
+                showPushNotification(saved.title, saved.message, saved.level);
+            }
         } catch (e: any) {
             alert('Erro: ' + e.message);
         } finally {

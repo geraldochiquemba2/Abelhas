@@ -1,10 +1,13 @@
-import React from 'react';
-import { LayoutDashboard, Home, Map, Thermometer, History, Settings, MoreVertical, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { LayoutDashboard, Home, Map, Thermometer, History, Settings, MoreVertical, X, Bell, BarChart3, Radio } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
+import { getUnreadAlertCount } from '../api';
 
 const navItems = [
     { name: 'Painel Principal', path: '/', icon: LayoutDashboard },
     { name: 'Análise da IA', path: '/insights', icon: Home },
+    { name: 'Atividade', path: '/activity', icon: BarChart3 },
+    { name: 'Bee Radar', path: '/bee-radar', icon: Radio },
     { name: 'Mapa Global', path: '/map', icon: Map },
     { name: 'Saúde Térmica', path: '/thermal', icon: Thermometer },
 ];
@@ -16,6 +19,14 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const location = useLocation();
+    const [unreadCount, setUnreadCount] = useState(0);
+
+    useEffect(() => {
+        const load = async () => setUnreadCount(await getUnreadAlertCount());
+        load();
+        const interval = setInterval(load, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     return (
         <>
@@ -76,6 +87,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     <div className="pt-4 pb-2 px-4">
                         <div className="h-px bg-slate-100 w-full" />
                     </div>
+
+                    <Link
+                        to="/alerts"
+                        onClick={onClose}
+                        className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-all group relative ${location.pathname === '/alerts'
+                                ? 'bg-red-50 text-red-700 border border-red-200'
+                                : 'text-slate-500 hover:text-red-600 hover:bg-red-50'
+                            }`}
+                    >
+                        <div className="relative">
+                            <Bell className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[8px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center">
+                                    {unreadCount > 9 ? '9+' : unreadCount}
+                                </span>
+                            )}
+                        </div>
+                        <span className="text-sm font-medium tracking-wide group-hover:font-bold transition-all truncate">
+                            Alertas
+                            {unreadCount > 0 && (
+                                <span className="ml-1 text-[10px] text-red-500 font-black">({unreadCount})</span>
+                            )}
+                        </span>
+                    </Link>
 
                     <Link
                         to="/history"

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Layout } from '../components/Layout';
-import { saveDiagnostic } from '../api';
+import { saveDiagnostic, saveAlert, showPushNotification, analyzeDiagnosticForAlerts } from '../api';
 
 const GROQ_CHAT_MODEL = 'llama-3.3-70b-versatile';
 
@@ -140,7 +140,13 @@ const Thermal: React.FC = () => {
             if (!data.choices?.[0]?.message?.content) throw new Error('Resposta inválida da API.');
             const text = data.choices[0].message.content;
             setDiagnosis(text);
-            saveDiagnostic({ type: 'thermal', region: region.name, temperature: h, result: text }).catch(() => {});
+            const diag = await saveDiagnostic({ type: 'thermal', region: region.name, temperature: h, result: text });
+
+            const alerts = analyzeDiagnosticForAlerts(text, 'thermal');
+            for (const a of alerts) {
+                const saved = await saveAlert({ ...a, diagnosticId: diag.id });
+                showPushNotification(saved.title, saved.message, saved.level);
+            }
         } catch (e: any) {
             alert('Erro: ' + e.message);
         } finally {
