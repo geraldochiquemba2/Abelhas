@@ -6,7 +6,10 @@ export default defineConfig({
         port: 5173,
         allowedHosts: true,
         proxy: {
-            '/api': 'http://localhost:3001',
+            '/api': {
+                target: 'https://localhost:3001',
+                secure: false,
+            },
         },
     },
     preview: {

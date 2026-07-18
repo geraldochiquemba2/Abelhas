@@ -23,8 +23,13 @@ import math
 import statistics
 import urllib.request
 import urllib.error
+import ssl
 from collections import deque
 import argparse
+
+ssl_ctx = ssl.create_default_context()
+ssl_ctx.check_hostname = False
+ssl_ctx.verify_mode = ssl.CERT_NONE
 
 
 class KWienerFilter:
@@ -297,7 +302,7 @@ class BeeWiFiScanner:
                 headers={'Content-Type': 'application/json'},
                 method='POST'
             )
-            urllib.request.urlopen(req, timeout=5)
+            urllib.request.urlopen(req, timeout=5, context=ssl_ctx)
             return True
         except Exception as e:
             print(f"[ERRO] Falha ao enviar: {e}", flush=True)

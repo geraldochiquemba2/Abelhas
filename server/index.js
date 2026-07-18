@@ -6,6 +6,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { pool } from './db.js';
+import { spawnSync } from 'child_process';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -15,7 +16,7 @@ app.use(express.json({ limit: '20mb' }));
 
 const initDb = async () => {
     if (!process.env.DATABASE_URL) {
-        console.log('DATABASE_URL não definida — armazenamento em base de dados desativado (usa localStorage no dispositivo).');
+        console.log('DATABASE_URL não definida — usa localStorage no dispositivo.');
         return;
     }
     try {
@@ -32,7 +33,7 @@ const initDb = async () => {
         `);
         console.log('Tabela diagnostics pronta.');
     } catch (e) {
-        console.warn('Aviso: não foi possível iniciar a base de dados:', e.message);
+        console.warn('Aviso BD:', e.message);
     }
 };
 
@@ -60,6 +61,310 @@ app.get('/api/beedata', (_req, res) => {
         history: beeDataHistory.slice(0, 100),
     });
 });
+
+// ── WiFi Radar Engine (native Node.js) ──────────────────────────────
+
+function pctToDbm(pct) {
+    if (pct <= 0) return -100;
+    if (pct >= 100) return -50;
+    return -50 - 50 * Math.pow(1 - pct / 100, 1.8);
+}
+
+function scanNetworks() {
+    try {
+        const result = spawnSync('netsh', ['wlan', 'show', 'networks', 'mode=bssid'], {
+            timeout: 10000,
+            encoding: 'latin1',
+            windowsHide: true,
+            stdio: ['pipe', 'pipe', 'pipe'],
+        });
+        if (result.status !== 0) return {};
+        const output = result.stdout || '';
+        const networks = {};
+        let currentSsid = null;
+        for (const line of output.split('\n')) {
+            const trimmed = line.trim();
+            const ssidMatch = trimmed.match(/^SSID\s+\d+\s*:\s*(.+)/);
+            if (ssidMatch) {
+                currentSsid = ssidMatch[1].trim();
+                if (!networks[currentSsid]) networks[currentSsid] = [];
+            }
+            if (currentSsid && (/Sinal|Signal/i).test(trimmed)) {
+                const signalMatch = trimmed.match(/(\d+)%/);
+                if (signalMatch) {
+                    networks[currentSsid].push(pctToDbm(parseInt(signalMatch[1])));
+                }
+            }
+        }
+        const avg = {};
+        for (const [ssid, signals] of Object.entries(networks)) {
+            if (signals.length > 0) {
+                avg[ssid] = signals.reduce((a, b) => a + b, 0) / signals.length;
+            }
+        }
+        return avg;
+    } catch {
+        return {};
+    }
+}
+
+// Wiener filter per-SSID
+class WienerFilter {
+    constructor(windowSize = 20) {
+        this.windowSize = windowSize;
+        this.buffer = [];
+    }
+    filter(value) {
+        this.buffer.push(value);
+        if (this.buffer.length > this.windowSize) this.buffer.shift();
+        if (this.buffer.length < 3) return value;
+        const mean = this.buffer.reduce((a, b) => a + b, 0) / this.buffer.length;
+        const variance = this.variance();
+        const diffs = this.buffer.slice(1).map((v, i) => Math.abs(v - this.buffer[i]));
+        const noiseVar = Math.pow(diffs.reduce((a, b) => a + b, 0) / diffs.length, 2) || 0.5;
+        const gain = variance + noiseVar > 0 ? variance / (variance + noiseVar) : 0.5;
+        return mean + gain * (value - mean);
+    }
+    variance() {
+        if (this.buffer.length < 3) return 0;
+        const mean = this.buffer.reduce((a, b) => a + b, 0) / this.buffer.length;
+        return this.buffer.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / this.buffer.length;
+    }
+    noise() {
+        if (this.buffer.length < 3) return 1;
+        const diffs = this.buffer.slice(1).map((v, i) => Math.abs(v - this.buffer[i]));
+        return diffs.reduce((a, b) => a + b, 0) / diffs.length || 0.5;
+    }
+}
+
+class AutoThreshold {
+    constructor(size = 40) {
+        this.size = size;
+        this.history = [];
+        this.base = 0.02;
+    }
+    update(v) { this.history.push(v); if (this.history.length > this.size) this.history.shift(); }
+    threshold() {
+        if (this.history.length < 5) return this.base;
+        const mean = this.history.reduce((a, b) => a + b, 0) / this.history.length;
+        const std = this.history.length > 1
+            ? Math.sqrt(this.history.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / this.history.length)
+            : 0.01;
+        return Math.max(this.base, mean + 0.5 * std);
+    }
+    isSignificant(v) { return Math.abs(v) >= this.threshold(); }
+}
+
+let radarInterval = null;
+let radarStatus = 'stopped';
+let radarLog = '';
+const baselines = {};
+const filters = {};
+const thresholds = {};
+const signalHistory = {};
+let momentum = 0;
+const energyWindow = [];
+let detectionState = 0;
+let stateCounter = 0;
+let totalScans = 0;
+let detections = 0;
+
+function calibrate(calScans = 8) {
+    const sums = {};
+    const counts = {};
+    for (let i = 0; i < calScans; i++) {
+        const nets = scanNetworks();
+        for (const [ssid, val] of Object.entries(nets)) {
+            if (!sums[ssid]) { sums[ssid] = 0; counts[ssid] = 0; }
+            sums[ssid] += val;
+            counts[ssid]++;
+        }
+    }
+    for (const ssid of Object.keys(sums)) {
+        baselines[ssid] = sums[ssid] / counts[ssid];
+        filters[ssid] = new WienerFilter(20);
+        thresholds[ssid] = new AutoThreshold(60);
+    }
+    return Object.keys(baselines).length;
+}
+
+function analyzeOnce() {
+    const networks = scanNetworks();
+    totalScans++;
+    if (Object.keys(networks).length === 0) return null;
+
+    const changes = {};
+    let totalEnergy = 0;
+    const significant = [];
+    const filterInfo = {};
+    const targets = [];
+
+    for (const [ssid, baseline] of Object.entries(baselines)) {
+        if (!(ssid in networks)) continue;
+        const raw = networks[ssid];
+        const filt = filters[ssid].filter(raw);
+        const change = Math.round((filt - baseline) * 100) / 100;
+        const absChange = Math.abs(change);
+        changes[ssid] = change;
+
+        const at = thresholds[ssid];
+        const thr = at.threshold();
+        if (absChange < thr * 0.5) at.update(absChange);
+
+        const sigVar = filters[ssid].variance();
+        const noiseEst = filters[ssid].noise();
+
+        // Track signal history for direction
+        if (!signalHistory[ssid]) signalHistory[ssid] = [];
+        signalHistory[ssid].push(raw);
+        if (signalHistory[ssid].length > 20) signalHistory[ssid].shift();
+
+        // Calculate direction from recent trend
+        const hist = signalHistory[ssid];
+        let direction = 0;
+        let speed = 0;
+        if (hist.length >= 3) {
+            const recent = hist.slice(-3);
+            direction = recent[2] - recent[0]; // positive = signal increasing, negative = decreasing
+            speed = Math.abs(direction);
+        }
+
+        filterInfo[ssid] = {
+            raw: Math.round(raw * 10) / 10,
+            filtered: Math.round(filt * 10) / 10,
+            threshold: Math.round(thr * 100) / 100,
+            noise: Math.round(noiseEst * 100) / 100,
+            variance: Math.round(sigVar * 1000) / 1000,
+        };
+
+        if (at.isSignificant(absChange)) {
+            const energyContrib = absChange - thr;
+            totalEnergy += Math.max(0, energyContrib);
+            significant.push({ ssid, change, abs: absChange });
+        } else if (sigVar > 0.1) {
+            totalEnergy += Math.min(sigVar * 0.5, 1.0);
+        }
+
+        // Create target for each detected network
+        targets.push({
+            ssid,
+            signal: Math.round(raw * 10) / 10,
+            change: Math.round(change * 100) / 100,
+            absChange: Math.round(absChange * 100) / 100,
+            direction: Math.round(direction * 100) / 100,
+            speed: Math.round(speed * 100) / 100,
+            variance: Math.round(sigVar * 1000) / 1000,
+            isMoving: absChange > thr || speed > 0.3,
+            baseline: Math.round(baseline * 10) / 10,
+        });
+    }
+
+    momentum = momentum * 0.5 + totalEnergy * 0.5;
+    energyWindow.push(momentum);
+    if (energyWindow.length > 5) energyWindow.shift();
+    const avgEnergy = energyWindow.reduce((a, b) => a + b, 0) / energyWindow.length;
+
+    let beeActivity = 0;
+    if (avgEnergy > 0.02) beeActivity = 1;
+    if (avgEnergy > 0.1) beeActivity = 2;
+    if (avgEnergy > 0.5) beeActivity = 3;
+
+    if (beeActivity > 0) {
+        stateCounter = Math.min(stateCounter + 1, 3);
+        detectionState = stateCounter >= 2 ? 2 : 1;
+        if (detectionState === 2) detections++;
+    } else {
+        stateCounter = Math.max(stateCounter - 1, 0);
+        if (stateCounter === 0) detectionState = 0;
+    }
+
+    const finalActivity = beeActivity;
+    const now = new Date().toLocaleTimeString('pt-AO');
+    return {
+        time: now,
+        ts: Date.now(),
+        changes,
+        significant: significant.length,
+        total_energy: Math.round(avgEnergy * 1000) / 1000,
+        raw_energy: Math.round(totalEnergy * 1000) / 1000,
+        bee_activity: finalActivity,
+        possible_bees: beeActivity,
+        detection_state: detectionState,
+        details: significant.slice(0, 10),
+        filters: filterInfo,
+        targets,
+        networks_count: Object.keys(networks).length,
+        network_names: Object.keys(networks),
+    };
+}
+
+function startRadarLoop(intervalMs = 1000) {
+    if (radarInterval) return;
+    radarStatus = 'calibrating';
+    radarLog = '[*] Calibrando WiFi...';
+    console.log('[Radar] Calibrando...');
+
+    const calibrated = calibrate(15);
+    if (calibrated === 0) {
+        radarStatus = 'error';
+        radarLog = '[ERRO] Nenhuma rede WiFi encontrada. Verifique o adaptador WiFi.';
+        console.log('[Radar] Nenhuma rede encontrada');
+        return;
+    }
+    radarStatus = 'running';
+    radarLog = `[OK] Calibrado com ${calibrated} rede(s): ${Object.keys(baselines).join(', ')}`;
+    console.log(`[Radar] Calibrado: ${Object.keys(baselines).join(', ')}`);
+
+    radarInterval = setInterval(() => {
+        const data = analyzeOnce();
+        if (data) {
+            latestBeeData = data;
+            data.received_at = new Date().toISOString();
+            beeDataHistory.unshift(data);
+            if (beeDataHistory.length > 500) beeDataHistory.length = 500;
+
+            if (data.bee_activity > 0) {
+                const msg = `[${data.time}] ATIVIDADE (${data.bee_activity}) - Energia: ${data.total_energy}`;
+                radarLog = msg;
+                console.log(`[Radar] ${msg}`);
+            }
+        }
+    }, intervalMs);
+}
+
+function stopRadarLoop() {
+    if (radarInterval) {
+        clearInterval(radarInterval);
+        radarInterval = null;
+    }
+    radarStatus = 'stopped';
+    radarLog = '';
+}
+
+app.post('/api/radar/start', (_req, res) => {
+    if (radarStatus === 'running' || radarStatus === 'calibrating') {
+        return res.json({ status: radarStatus, message: 'Radar já está activo' });
+    }
+    try {
+        startRadarLoop(2000);
+        res.json({ status: 'started', message: 'Radar WiFi iniciado' });
+    } catch (e) {
+        radarStatus = 'error';
+        radarLog = `[ERRO] ${e.message}`;
+        res.status(500).json({ status: 'error', message: e.message });
+    }
+});
+
+app.post('/api/radar/stop', (_req, res) => {
+    stopRadarLoop();
+    res.json({ status: 'stopped', message: 'Radar parado' });
+});
+
+app.get('/api/radar/status', (_req, res) => {
+    res.json({ status: radarStatus, log: radarLog });
+});
+
+// ── AI Endpoints ─────────────────────────────────────────────────────
 
 const GROQ_URL = 'https://api.groq.com/openai/v1';
 const groqHeaders = () => ({
@@ -149,28 +454,18 @@ app.use(express.static(dist));
 app.get('/{*splat}', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
 
 const port = process.env.PORT || 3001;
-
 const certPath = path.join(__dirname, '..', 'cert.pem');
 const keyPath = path.join(__dirname, '..', 'key.pem');
 
 const startServer = (app, port) => {
     if (fs.existsSync(certPath) && fs.existsSync(keyPath)) {
-        const options = {
-            key: fs.readFileSync(keyPath),
-            cert: fs.readFileSync(certPath),
-        };
-        https.createServer(options, app).listen(port, '0.0.0.0', () => {
-            console.log(`HTTPS a correr em https://0.0.0.0:${port}`);
-        });
+        https.createServer({ key: fs.readFileSync(keyPath), cert: fs.readFileSync(certPath) }, app)
+            .listen(port, '0.0.0.0', () => console.log(`HTTPS: https://0.0.0.0:${port}`));
     } else {
         import('http').then(({ default: http }) => {
-            http.createServer(app).listen(port, '0.0.0.0', () => {
-                console.log(`HTTP a correr em http://0.0.0.0:${port}`);
-            });
+            http.createServer(app).listen(port, '0.0.0.0', () => console.log(`HTTP: http://0.0.0.0:${port}`));
         });
     }
 };
 
-initDb()
-    .then(() => startServer(app, port))
-    .catch((e) => { console.error('Erro ao iniciar:', e); process.exit(1); });
+initDb().then(() => startServer(app, port)).catch(e => { console.error('Erro:', e); process.exit(1); });

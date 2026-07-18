@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Mic, Square, BarChart3, Volume2, Zap, AlertTriangle, CheckCircle, RotateCcw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { saveBeeActivity, getActivityHistory, type BeeActivity } from '../api';
 
 const BEE_FREQ_LOW = 50;
@@ -7,6 +8,7 @@ const BEE_FREQ_HIGH = 500;
 const PULSE_THRESHOLD = 40;
 
 export const BeeCounter: React.FC = () => {
+    const navigate = useNavigate();
     const [isRecording, setIsRecording] = useState(false);
     const [results, setResults] = useState<BeeActivity | null>(null);
     const [history, setHistory] = useState<BeeActivity[]>([]);
@@ -262,6 +264,14 @@ export const BeeCounter: React.FC = () => {
                         <h2 className="text-2xl sm:text-3xl font-black text-slate-900">Atividade por Áudio</h2>
                     </div>
                 </div>
+
+                <button
+                    onClick={() => navigate('/insights')}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary-dark text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-primary-dark/30 hover:shadow-xl hover:scale-[1.02] transition-all mb-6"
+                >
+                    <Zap className="w-4 h-4" />
+                    Iniciar Diagnóstico
+                </button>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                     <div className="bg-white/50 rounded-2xl p-4 text-center">
