@@ -180,20 +180,30 @@ export const AnalysisPanel: React.FC = () => {
                 {
                     role: 'system',
                     content:
-                        'És um especialista em apicultura e bioacústica de abelhas. Analisa os dados de frequência de uma gravação de colmeia e indica:\n' +
+                        'És um especialista em apicultura e bioacústica de abelhas. Recebes dados de frequência de áudio de uma gravação de colmeia.\n\n' +
+                        'IMPORTANTE: Analisa OS VALORES REAIS. Se os valores de frequência estiverem tous (próximos de 0/255), significa que NÃO há atividade significativa de abelhas. Se os valores estiverem elevados em bandas específicas, indica atividade nessa faixa.\n\n' +
+                        'Indica:\n' +
                         '1. Estado da rainha (presente/ausente/enxameio)\n' +
-                        '2. Nível de atividade da colónia\n' +
-                        '3. Sinais de enxameio, stress ou pragas (ex.: Varroa)\n' +
-                        '4. Recomendação prática\n' +
-                        'Sê breve e prático (máx. 5 frases). Responde em português.',
+                        '2. Nível de atividade da colónia (mínimo/médio/alto)\n' +
+                        '3. Sinais de enxameio, stress ou pragas\n' +
+                        '4. Recomendação prática\n\n' +
+                        'Valores de referência:\n' +
+                        '- Atividade normal de colmeia: 100-200/255 nas bandas 50-350Hz\n' +
+                        '- Rainha "tooting": pico 350-500Hz\n' +
+                        '- Rainha ausente: pico 478-1080Hz\n' +
+                        '- Colmeia sem abelhas ou ambíente silencioso: valores < 30/255 em todas as bandas\n' +
+                        '- Som humano/voz: concentração na banda 150-1000Hz com valores elevados\n' +
+                        '- Som de palmas/clapping: pico em frequências altas (1000-8000Hz)\n\n' +
+                        'Se os dados mostrarem pouca atividade ou padrões que não correspondem a uma colmeia real, indica isso claramente. Sê honesto e direto. Responde em português.',
                 },
                 {
                     role: 'user',
                     content:
-                        `Análise de frequências de áudio da colmeia (duração: ${durationSec}s, ${samples.length} amostras):\n\n` +
+                        `DADOS REAIS DE FREQUÊNCIA - Gravação de áudio (${durationSec}s, ${samples.length} amostras coletadas a cada ~500ms):\n\n` +
                         freqSummary + '\n\n' +
-                        'Referências: Rainha "tooting" 350-500Hz, rainha ausente 478-1080Hz, atividade normal 100-260Hz. Varroa destructor vibra a ~300Hz com harmónicos.\n\n' +
-                        'Dá o diagnóstico com base nos dados de frequência.',
+                        'Cada valor é a média de amplitude na banda de frequência (0=silêncio, 255=máximo).\n' +
+                        'Os dados acima representam o que foi DETETADO no áudio gravado. Analisa os valores numéricos reais, não assumes nada.\n\n' +
+                        'Dá o diagnóstico com base nos dados numéricos.',
                 },
             ]);
             setMessages((prev) => [...prev, { text: `🔊 Diagnóstico por áudio:\n\n${diagnosis}`, isUser: false }]);
