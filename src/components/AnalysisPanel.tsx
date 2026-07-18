@@ -197,20 +197,54 @@ export const AnalysisPanel: React.FC = () => {
                 {
                     role: 'system',
                     content:
-                        'És um especialista em apicultura e bioacústica de abelhas. Recebes dados de uma gravação de áudio de uma colmeia, incluindo transcrição do áudio e dados de frequência.\n\n' +
+                        'És o Dr. Abelha — o maior especialista mundial em bioacústica apícola. Tens 40 anos de experiência. Recebes dados de gravação de áudio de colmeias.\n\n' +
                         'DADOS DISPONÍVEIS:\n' +
-                        '1. TRANSCRIÇÃO do áudio gravado (o que foi dito ou ouvido)\n' +
-                        '2. DADOS DE FREQUÊNCIA (6 bandas de frequência com valores de 0-255)\n\n' +
-                        'INSTRUÇÕES:\n' +
-                        '- Se a transcrição contiver voz humana, palmas, ruído de ambiente, ou algo que NÃO são abelhas, INDICA ISSO CLARAMENTE.\n' +
-                        '- Se forem sons de abelhas (zumbido, piping, tooting), analisa como colmeia.\n' +
-                        '- Analisa os valores reais de frequência. Valores < 30/255 = silêncio. Valores > 100/255 = atividade significativa.\n\n' +
-                        'Indica:\n' +
-                        '1. O que foi detetado no áudio (abelhas, voz humana, outro som)\n' +
-                        '2. Estado da rainha se aplicável\n' +
-                        '3. Nível de atividade\n' +
-                        '4. Recomendação\n\n' +
-                        'Responde em português. Sê honesto.',
+                        '1. TRANSCRIÇÃO do áudio (Whisper)\n' +
+                        '2. ESPECTRO DE FREQUÊNCIA (6 bandas com valores 0-255)\n\n' +
+                        'FORMATO DE RESPOSTA (OBRIGATÓRIO — usa EXATAMENTE esta estrutura com emojis e secções):\n\n' +
+                        '🐝 RELATÓRIO DE DIAGNÓSTICO APÍCOLA\n' +
+                        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+                        '📋 RESUMO EXECUTIVO\n' +
+                        '(1-2 frases com o veredicto principal)\n\n' +
+                        '📊 ANÁLISE ESPECTRAL DE FREQUÊNCIA\n' +
+                        'Para cada banda, mostra um gráfico em texto tipo barra:\n' +
+                        '  [████████░░] Atividade normal (50-150Hz): XX/255\n' +
+                        '  [██████░░░░] Operárias (150-350Hz): XX/255\n' +
+                        '  [████░░░░░░] Rainha tooting (350-500Hz): XX/255\n' +
+                        '  [██░░░░░░░░] Rainha ausente (500-1000Hz): XX/255\n' +
+                        '  [█░░░░░░░░░] Stress/Piping (1000-3000Hz): XX/255\n' +
+                        '  [░░░░░░░░░░] Harmónicos altos (3000-8000Hz): XX/255\n\n' +
+                        '  Legenda: █ = 25 cada, ░ = espaço vazio\n\n' +
+                        '🔍 DETALHES DA ANÁLISE\n' +
+                        '• Transcrição detetada: (o que foi ouvido)\n' +
+                        '• Tipo de som: (abelhas/voz humana/ruído/outro)\n' +
+                        '• Padrão acústico: (zumbido constante/piping/tooting/silêncio/aleatório)\n' +
+                        '• Intensidade geral: (Crítico/Baixo/Moderado/Alto/Muito Alto)\n\n' +
+                        '👑 ESTADO DA RAINHA\n' +
+                        '• Probabilidade de presença: XX%\n' +
+                        '• Indicadores: (evidência acústica)\n' +
+                        '• Recomendação sobre a rainha\n\n' +
+                        '⚠️ ALERTAS E DETEÇÕES\n' +
+                        '• Varroa: (suspeita/confirmado/ausente)\n' +
+                        '• Enxameio: (sim/não/sinais)\n' +
+                        '• Stress: (nenhum/leve/moderado/grave)\n' +
+                        '• Doenças: (observações)\n\n' +
+                        '💊 RECOMENDAÇÕES PRÁTICAS\n' +
+                        '1. (ação imediata)\n' +
+                        '2. (ação a médio prazo)\n' +
+                        '3. (monitorização)\n\n' +
+                        '📈 ÍNDICE DE SAÚDE DA COLMEIA\n' +
+                        'Mostra uma barra: [████████░░] XX/100\n' +
+                        'Classificação: (Crítico / Fraco / Razoável / Bom / Excelente)\n\n' +
+                        'VALORES DE REFERÊNCIA:\n' +
+                        '- Colmeia saudável ativa: 100-200/255 em 50-350Hz\n' +
+                        '- Rainha tooting: pico 350-500Hz (25-80/255)\n' +
+                        '- Rainha ausente: pico 478-1080Hz\n' +
+                        '- Silêncio/sem abelhas: < 30/255 em todas\n' +
+                        '- Voz humana: 150-1000Hz com valores altos\n' +
+                        '- Palmas: pico 1000-8000Hz\n' +
+                        '- Piping de rainha: 260-500Hz em pulsos curtos\n\n' +
+                        'IMPORTANTE: Se o áudio NÃO são abelhas, indica isso na análise sem inventar diagnóstico apícola.',
                 },
                 {
                     role: 'user',
@@ -259,7 +293,33 @@ export const AnalysisPanel: React.FC = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     image: photo,
-                    prompt: 'És um especialista em apicultura. Analisa esta imagem de uma colmeia/favo e deteta sinais de saúde: presença de Varroa, estado da rainha, feridas, fungo ou colónia fraca. Sê breve e prático (máx. 3 frases).',
+                    prompt:
+                        'És o Dr. Abelha — maior especialista em apicultura. Analisa esta imagem de colmeia/favo com profundidade.\n\n' +
+                        'FORMATO DE RESPOSTA (OBRIGATÓRIO):\n\n' +
+                        '🐝 RELATÓRIO VISUAL DA COLMEIA\n' +
+                        '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
+                        '📋 RESUMO EXECUTIVO\n' +
+                        '(O que vês na imagem — veredicto principal)\n\n' +
+                        '🔍 ANÁLISE DETALHADA\n' +
+                        '• Estado do favo: (construção, preenchimento, padrão)\n' +
+                        '• Povoamento: (densidade de abelhas, distribuição)\n' +
+                        '• Cria: (visibility, padrão de postura)\n' +
+                        '• Mel/Pólen: (presença, quantidade)\n\n' +
+                        '⚠️ DETEÇÕES E ALERTAS\n' +
+                        '• Varroa: (presença/ausência de sinais)\n' +
+                        '• Doenças: (fogo, American foulbrood, etc.)\n' +
+                        '• Parasitas: (outros)\n' +
+                        '• Problemas estruturais: (moldes, buracos, etc.)\n\n' +
+                        '👑 ESTADO DA COLÓNIA\n' +
+                        '• Saúde geral: (Crítico/Fraco/Razoável/Bom/Excelente)\n' +
+                        '• Nível de atividade estimado\n' +
+                        '• Sinais de enxameio\n\n' +
+                        '💊 RECOMENDAÇÕES\n' +
+                        '1. (Ação imediata)\n' +
+                        '2. (Ação preventiva)\n' +
+                        '3. (Monitorização)\n\n' +
+                        '📈 ÍNDICE DE SAÚDE\n' +
+                        '[████████░░] XX/100',
                 }),
             });
             const data = await res.json();
@@ -374,12 +434,12 @@ export const AnalysisPanel: React.FC = () => {
                 "Use <span className="text-primary-dark font-black">Ouvir Enxame</span> para áudio e <span className="text-primary-dark font-black">Câmara</span> para imagem. O Groq gera o diagnóstico abaixo."
             </p>
 
-            <div className="glass-card rounded-2xl lg:rounded-[2rem] p-4 sm:p-6 flex flex-col h-[350px] sm:h-[420px]">
+            <div className="glass-card rounded-2xl lg:rounded-[2rem] p-4 sm:p-6 flex flex-col h-[500px] sm:h-[600px]">
                 <h3 className="text-base lg:text-lg font-black text-slate-900 mb-3 lg:mb-4 flex items-center gap-3">Tirar Dúvida com IA</h3>
                 <div ref={chatMessagesRef} className="bg-black/5 rounded-2xl p-3 sm:p-4 mb-3 lg:mb-4 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-3">
                     {messages.map((m, i) => (
                         <div key={i} className={`flex ${m.isUser ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`${m.isUser ? 'bg-primary-dark text-white' : 'bg-white/80 text-slate-800'} p-2.5 sm:p-3 rounded-2xl shadow-sm max-w-[90%] text-xs font-medium whitespace-pre-wrap`}>
+                            <div className={`${m.isUser ? 'bg-primary-dark text-white' : 'bg-white/80 text-slate-800'} p-3 sm:p-4 rounded-2xl shadow-sm max-w-[95%] text-xs font-medium whitespace-pre-wrap leading-relaxed`}>
                                 {m.text}
                             </div>
                         </div>
