@@ -198,6 +198,7 @@ export const AnalysisPanel: React.FC = () => {
                     role: 'system',
                     content:
                         'És o Dr. Abelha — o maior especialista mundial em bioacústica apícola. Tens 40 anos de experiência. Recebes dados de gravação de áudio de colmeias.\n\n' +
+                        'IMPORTANTE: NAO uses asteriscos, markdown ou negrito. Responde em texto simples com emojis e secções.\n\n' +
                         'DADOS DISPONÍVEIS:\n' +
                         '1. TRANSCRIÇÃO do áudio (Whisper)\n' +
                         '2. ESPECTRO DE FREQUÊNCIA (6 bandas com valores 0-255)\n\n' +
@@ -244,7 +245,8 @@ export const AnalysisPanel: React.FC = () => {
                         '- Voz humana: 150-1000Hz com valores altos\n' +
                         '- Palmas: pico 1000-8000Hz\n' +
                         '- Piping de rainha: 260-500Hz em pulsos curtos\n\n' +
-                        'IMPORTANTE: Se o áudio NÃO são abelhas, indica isso na análise sem inventar diagnóstico apícola.',
+                        'IMPORTANTE: Se o áudio NÃO são abelhas, indica isso na análise sem inventar diagnóstico apícola.\n' +
+                        'NÃO uses asteriscos (*) em lado nenhum da resposta.',
                 },
                 {
                     role: 'user',
@@ -294,8 +296,9 @@ export const AnalysisPanel: React.FC = () => {
                 body: JSON.stringify({
                     image: photo,
                     prompt:
+                        'IMPORTANTE: NAO uses asteriscos, markdown ou negrito. Responde em texto simples com emojis e secções.\n\n' +
                         'És o Dr. Abelha — maior especialista em apicultura. Analisa esta imagem de colmeia/favo com profundidade.\n\n' +
-                        'FORMATO DE RESPOSTA (OBRIGATÓRIO):\n\n' +
+                        'FORMATO DE RESPOSTA (OBRIGATÓRIO — sem asteriscos):\n\n' +
                         '🐝 RELATÓRIO VISUAL DA COLMEIA\n' +
                         '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
                         '📋 RESUMO EXECUTIVO\n' +
@@ -303,7 +306,7 @@ export const AnalysisPanel: React.FC = () => {
                         '🔍 ANÁLISE DETALHADA\n' +
                         '• Estado do favo: (construção, preenchimento, padrão)\n' +
                         '• Povoamento: (densidade de abelhas, distribuição)\n' +
-                        '• Cria: (visibility, padrão de postura)\n' +
+                        '• Cria: (visibilidade, padrão de postura)\n' +
                         '• Mel/Pólen: (presença, quantidade)\n\n' +
                         '⚠️ DETEÇÕES E ALERTAS\n' +
                         '• Varroa: (presença/ausência de sinais)\n' +
@@ -319,7 +322,8 @@ export const AnalysisPanel: React.FC = () => {
                         '2. (Ação preventiva)\n' +
                         '3. (Monitorização)\n\n' +
                         '📈 ÍNDICE DE SAÚDE\n' +
-                        '[████████░░] XX/100',
+                        '[████████░░] XX/100\n\n' +
+                        'NÃO uses asteriscos (*) em lado nenhum da resposta.',
                 }),
             });
             const data = await res.json();
@@ -343,7 +347,7 @@ export const AnalysisPanel: React.FC = () => {
         try {
             setAnalyzing('chat');
             const reply = await callChat([
-                { role: 'system', content: 'És o assistente Colmeia Saudável, especialista em colmeias e bioacústica. Responde em português, de forma clara e útil para apicultores.' },
+                { role: 'system', content: 'És o assistente Colmeia Saudável, especialista em colmeias e bioacústica. Responde em português, de forma clara e útil para apicultores. NÃO uses asteriscos nem markdown.' },
                 ...messages.map((m) => ({ role: m.isUser ? 'user' : 'assistant', content: m.text })),
                 { role: 'user', content: userMsg },
             ]);

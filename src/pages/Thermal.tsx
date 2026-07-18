@@ -104,6 +104,7 @@ const Thermal: React.FC = () => {
                             role: 'system',
                             content:
                                 'És o Dr. Abelha — maior especialista em apicultura e termorregulação de colmeias.\n\n' +
+                                'IMPORTANTE: NAO uses asteriscos, markdown ou negrito. Responde em texto simples com emojis e secções.\n\n' +
                                 'FORMATO DE RESPOSTA (OBRIGATÓRIO):\n\n' +
                                 '🌡️ RELATÓRIO TÉRMICO DA COLMEIA\n' +
                                 '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
