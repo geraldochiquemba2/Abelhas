@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { ArrowRight, Play } from 'lucide-react';
+import { ArrowRight, Zap, Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Home: React.FC = () => {
@@ -67,7 +67,7 @@ const Home: React.FC = () => {
                     <div className="hidden md:flex items-center gap-10">
                         <a className="text-sm font-medium text-white hover:text-primary transition-colors" href="#missao">A Nossa Missão</a>
                         <a className="text-sm font-medium text-white hover:text-primary transition-colors" href="#tecnologia">Tecnologia</a>
-                        <button onClick={() => navigate('/dashboard')} className="text-sm font-medium text-white hover:text-primary transition-colors">Dashboard</button>
+                        <button onClick={() => navigate('/insights')} className="text-sm font-medium text-white hover:text-primary transition-colors">Dashboard</button>
                         <button onClick={() => navigate('/map')} className="text-sm font-medium text-white hover:text-primary transition-colors">Mapa</button>
                     </div>
                 </div>
@@ -98,11 +98,18 @@ const Home: React.FC = () => {
                         </p>
                         <div className="flex flex-col sm:flex-row gap-3">
                             <button
-                                onClick={() => navigate('/dashboard')}
-                                className="flex items-center justify-center gap-2 bg-primary text-background-dark px-6 py-3 rounded-lg text-sm font-bold shadow-xl shadow-primary/30 hover:shadow-2xl hover:scale-[1.03] transition-all group"
+                                onClick={() => navigate('/insights')}
+                                className="flex items-center justify-center gap-2 bg-primary text-background-dark px-8 py-4 rounded-xl text-base font-black shadow-xl shadow-primary/30 hover:shadow-2xl hover:scale-[1.03] transition-all group uppercase tracking-wider"
                             >
-                                Começar Diagnóstico
-                                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                                <Zap className="w-5 h-5" />
+                                Iniciar Diagnóstico
+                                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                            </button>
+                            <button
+                                onClick={() => navigate('/activity')}
+                                className="flex items-center justify-center gap-2 bg-white/10 backdrop-blur-sm text-white px-6 py-4 rounded-xl text-sm font-bold border border-white/20 hover:bg-white/20 transition-all"
+                            >
+                                Contador de Abelhas
                             </button>
                         </div>
                         <div className="mt-4 flex items-center gap-6 border-t border-white/10 pt-4 w-fit">

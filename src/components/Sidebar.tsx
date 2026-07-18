@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { LayoutDashboard, Home, Map, Thermometer, History, Settings, MoreVertical, X, Bell, BarChart3, Radio } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { LayoutDashboard, Home, Map, Thermometer, History, Settings, MoreVertical, X, Bell, BarChart3, Radio, Zap } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { getUnreadAlertCount } from '../api';
 
 const navItems = [
@@ -19,6 +19,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     const location = useLocation();
+    const navigate = useNavigate();
     const [unreadCount, setUnreadCount] = useState(0);
 
     useEffect(() => {
@@ -59,6 +60,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                         aria-label="Fechar menu"
                     >
                         <X className="w-5 h-5 text-slate-500" />
+                    </button>
+                </div>
+
+                <div className="px-4 mb-6">
+                    <button
+                        onClick={() => { navigate('/insights'); onClose(); }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary-dark text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-primary-dark/30 hover:shadow-xl hover:scale-[1.02] transition-all"
+                    >
+                        <Zap className="w-4 h-4" />
+                        Iniciar Diagnóstico
                     </button>
                 </div>
 
