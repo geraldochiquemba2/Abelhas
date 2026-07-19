@@ -123,23 +123,29 @@ export async function getUnreadAlertCount(): Promise<number> {
 }
 
 export async function requestNotificationPermission(): Promise<boolean> {
-    if (!('Notification' in window)) return false;
-    if (Notification.permission === 'granted') return true;
-    if (Notification.permission === 'denied') return false;
-    const result = await Notification.requestPermission();
-    return result === 'granted';
+    try {
+        if (!('Notification' in window)) return false;
+        if (Notification.permission === 'granted') return true;
+        if (Notification.permission === 'denied') return false;
+        const result = await Notification.requestPermission();
+        return result === 'granted';
+    } catch {
+        return false;
+    }
 }
 
 export function showPushNotification(title: string, body: string, level: AlertLevel) {
-    if (Notification.permission !== 'granted') return;
-    const icon = level === 'critical' ? '🚨' : level === 'warning' ? '⚠️' : 'ℹ️';
-    new Notification(`${icon} ${title}`, {
-        body,
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
-        tag: `alert-${Date.now()}`,
-        requireInteraction: level === 'critical',
-    });
+    try {
+        if (!('Notification' in window) || Notification.permission !== 'granted') return;
+        const icon = level === 'critical' ? '🚨' : level === 'warning' ? '⚠️' : 'ℹ️';
+        new Notification(`${icon} ${title}`, {
+            body,
+            icon: '/favicon.ico',
+            badge: '/favicon.ico',
+            tag: `alert-${Date.now()}`,
+            requireInteraction: level === 'critical',
+        });
+    } catch { /* iOS Safari - sem notificações */ }
 }
 
 export function analyzeDiagnosticForAlerts(result: string, source: 'audio' | 'vision' | 'thermal'): Omit<Alert, 'id' | 'read' | 'created_at'>[] {
