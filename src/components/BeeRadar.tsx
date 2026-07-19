@@ -335,7 +335,7 @@ export const BeeRadar: React.FC = () => {
     const [data, setData] = useState<BeeDataResponse | null>(null);
     const [connected, setConnected] = useState(false);
     const [energyHistory, setEnergyHistory] = useState<number[]>([]);
-    const [radarState, setRadarState] = useState<'idle' | 'starting' | 'calibrating' | 'running' | 'error' | 'unavailable'>('idle');
+    const [radarState, setRadarState] = useState<'idle' | 'starting' | 'calibrating' | 'running' | 'error' | 'unavailable' | 'remote'>('idle');
     const [radarLog, setRadarLog] = useState('');
     const energyCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -378,6 +378,9 @@ export const BeeRadar: React.FC = () => {
             const d = await res.json();
             if (d.status === 'unavailable') {
                 setRadarState('unavailable');
+                setRadarLog(d.message);
+            } else if (d.status === 'remote') {
+                setRadarState('remote');
                 setRadarLog(d.message);
             } else if (d.status === 'started' || d.status === 'running') {
                 setRadarState('calibrating');
@@ -426,7 +429,7 @@ export const BeeRadar: React.FC = () => {
     const filters = current?.filters || {};
     const targets = current?.targets || [];
     const networks = Object.keys(filters);
-    const radarActive = radarState === 'running' || radarState === 'calibrating';
+    const radarActive = radarState === 'running' || radarState === 'calibrating' || (radarState === 'remote' && !!current);
     const movingTargets = targets.filter(t => t.isMoving);
 
     return (
@@ -453,6 +456,23 @@ export const BeeRadar: React.FC = () => {
                     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-center">
                         <p className="text-xs font-bold text-amber-700 mb-1">WiFi radar indisponível no servidor cloud</p>
                         <p className="text-[10px] text-amber-600">Execute a aplicação localmente no seu PC para detectar perturbações via WiFi.</p>
+                    </div>
+                ) : radarState === 'remote' ? (
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+                        <p className="text-xs font-bold text-blue-700 mb-2 text-center">📡 Modo Remoto — Envie dados do seu PC</p>
+                        <div className="bg-black/80 rounded-xl p-3 mb-2">
+                            <code className="text-green-400 text-[10px] font-mono break-all">
+                                python bee-radar.py --server https://colmeiasaudavel.onrender.com
+                            </code>
+                        </div>
+                        <p className="text-[10px] text-blue-600 text-center mb-2">Execute este comando no seu PC com WiFi. Os dados vão aparecer aqui em tempo real.</p>
+                        {current && (
+                            <p className="text-[10px] text-green-600 text-center font-bold">✓ Dados recebidos — radar activo!</p>
+                        )}
+                        <button onClick={() => { setRadarState('idle'); }}
+                            className="w-full mt-2 px-4 py-2 rounded-lg bg-blue-100 text-blue-700 text-[10px] font-bold">
+                            Fechar instruções
+                        </button>
                     </div>
                 ) : radarActive ? (
                     <button onClick={stopRadar}

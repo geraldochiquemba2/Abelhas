@@ -345,7 +345,7 @@ function stopRadarLoop() {
 
 app.post('/api/radar/start', (_req, res) => {
     if (isCloud) {
-        return res.json({ status: 'unavailable', message: 'WiFi radar indisponível no servidor cloud. Execute localmente para detectar perturbações via WiFi.' });
+        return res.json({ status: 'remote', message: 'Execute bee-radar.py localmente para enviar dados para este servidor.' });
     }
     if (radarStatus === 'running' || radarStatus === 'calibrating') {
         return res.json({ status: radarStatus, message: 'Radar já está activo' });
