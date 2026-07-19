@@ -7,6 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { pool } from './db.js';
 import { spawnSync } from 'child_process';
+import cron from 'node-cron';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -548,4 +549,19 @@ const startServer = (app, port) => {
     }
 };
 
-initDb().then(() => startServer(app, port)).catch(e => { console.error('Erro:', e); process.exit(1); });
+initDb().then(() => {
+    startServer(app, port);
+
+    // Keep Render awake: self-ping every 12 minutes
+    const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://colmeiasaudavel.onrender.com';
+    cron.schedule('*/12 * * * *', async () => {
+        try {
+            const res = await fetch(`${RENDER_URL}/api/health`);
+            const data = await res.json();
+            console.log(`[KeepAlive] ${new Date().toISOString()} — status: ${res.status}, ok: ${data.ok}`);
+        } catch (e) {
+            console.warn(`[KeepAlive] Falhou: ${e.message}`);
+        }
+    });
+    console.log(`[KeepAlive] Auto-ping activo a cada 12 min → ${RENDER_URL}`);
+}).catch(e => { console.error('Erro:', e); process.exit(1); });
