@@ -126,42 +126,25 @@ class BeeWiFiScanner:
     def scan_networks(self):
         try:
             result = subprocess.run(
-                ['netsh', 'wlan', 'show', 'networks', 'mode=bssid'],
+                ['netsh', 'wlan', 'show', 'interfaces'],
                 capture_output=True, text=True, timeout=10,
                 encoding='cp1252', errors='replace'
             )
             networks = {}
-            current_ssid = None
-            current_signals = []
-
+            ssid = None
             for line in result.stdout.split('\n'):
                 line = line.strip()
-                ssid_match = re.search(r'^SSID\s+\d+\s*:\s*(.+)', line)
+                ssid_match = re.search(r'^SSID\s*:\s*(.+)', line)
                 if ssid_match:
-                    if current_ssid and current_signals:
-                        if current_ssid not in networks:
-                            networks[current_ssid] = []
-                        networks[current_ssid].extend(current_signals)
-                    current_ssid = ssid_match.group(1).strip()
-                    current_signals = []
-
-                if current_ssid and ('Sinal' in line or 'Signal' in line):
-                    signal_match = re.search(r'(\d+)%', line)
-                    if signal_match:
-                        pct = int(signal_match.group(1))
-                        dbm = self.pct_to_dbm(pct)
-                        current_signals.append(dbm)
-
-            if current_ssid and current_signals:
-                if current_ssid not in networks:
-                    networks[current_ssid] = []
-                networks[current_ssid].extend(current_signals)
-
-            avg = {}
-            for ssid, signals in networks.items():
-                if signals:
-                    avg[ssid] = sum(signals) / len(signals)
-            return avg
+                    ssid = ssid_match.group(1).strip()
+                signal_match = re.search(r'Sinal\s*:\s*(\d+)%', line)
+                if not signal_match:
+                    signal_match = re.search(r'Signal\s*:\s*(\d+)%', line)
+                if signal_match and ssid:
+                    pct = int(signal_match.group(1))
+                    dbm = self.pct_to_dbm(pct)
+                    networks[ssid] = dbm
+            return networks
         except Exception:
             return {}
 

@@ -158,7 +158,7 @@ function pctToDbm(pct) {
 
 function scanNetworks() {
     try {
-        const result = spawnSync('netsh', ['wlan', 'show', 'networks', 'mode=bssid'], {
+        const result = spawnSync('netsh', ['wlan', 'show', 'interfaces'], {
             timeout: 10000,
             encoding: 'latin1',
             windowsHide: true,
@@ -167,28 +167,17 @@ function scanNetworks() {
         if (result.status !== 0 || !result.stdout) return {};
         const output = result.stdout || '';
         const networks = {};
-        let currentSsid = null;
+        let ssid = null;
         for (const line of output.split('\n')) {
             const trimmed = line.trim();
-            const ssidMatch = trimmed.match(/^SSID\s+\d+\s*:\s*(.+)/);
-            if (ssidMatch) {
-                currentSsid = ssidMatch[1].trim();
-                if (!networks[currentSsid]) networks[currentSsid] = [];
-            }
-            if (currentSsid && (/Sinal|Signal/i).test(trimmed)) {
-                const signalMatch = trimmed.match(/(\d+)%/);
-                if (signalMatch) {
-                    networks[currentSsid].push(pctToDbm(parseInt(signalMatch[1])));
-                }
+            const ssidMatch = trimmed.match(/^SSID\s*:\s*(.+)/);
+            if (ssidMatch) ssid = ssidMatch[1].trim();
+            const signalMatch = trimmed.match(/Sinal\s*:\s*(\d+)%/) || trimmed.match(/Signal\s*:\s*(\d+)%/);
+            if (signalMatch && ssid) {
+                networks[ssid] = pctToDbm(parseInt(signalMatch[1]));
             }
         }
-        const avg = {};
-        for (const [ssid, signals] of Object.entries(networks)) {
-            if (signals.length > 0) {
-                avg[ssid] = signals.reduce((a, b) => a + b, 0) / signals.length;
-            }
-        }
-        return avg;
+        return networks;
     } catch {
         return {};
     }
