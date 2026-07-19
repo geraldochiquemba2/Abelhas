@@ -554,7 +554,7 @@ initDb().then(() => {
 
     // Keep Render awake: self-ping every 12 minutes
     const RENDER_URL = process.env.RENDER_EXTERNAL_URL || 'https://colmeiasaudavel.onrender.com';
-    cron.schedule('*/12 * * * *', async () => {
+    cron.schedule('*/10 * * * *', async () => {
         try {
             const res = await fetch(`${RENDER_URL}/api/health`);
             const data = await res.json();
@@ -563,5 +563,5 @@ initDb().then(() => {
             console.warn(`[KeepAlive] Falhou: ${e.message}`);
         }
     });
-    console.log(`[KeepAlive] Auto-ping activo a cada 12 min → ${RENDER_URL}`);
+    console.log(`[KeepAlive] Auto-ping activo a cada 10 min → ${RENDER_URL}`);
 }).catch(e => { console.error('Erro:', e); process.exit(1); });
