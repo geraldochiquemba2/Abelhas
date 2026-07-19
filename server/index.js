@@ -465,6 +465,7 @@ app.post('/api/transcribe', async (req, res) => {
             method: 'POST',
             headers: { Authorization: `Bearer ${process.env.GROQ_API_KEY}` },
             body: form,
+            signal: AbortSignal.timeout(60000),
         });
         res.json(await r.json());
     } catch (e) {
@@ -479,6 +480,7 @@ app.post('/api/chat', async (req, res) => {
             method: 'POST',
             headers: groqHeaders(),
             body: JSON.stringify({ model: model || 'llama-3.3-70b-versatile', messages, temperature: 0.7 }),
+            signal: AbortSignal.timeout(90000),
         });
         res.json(await r.json());
     } catch (e) {
@@ -497,6 +499,7 @@ app.post('/api/vision', async (req, res) => {
                 model: model || 'qwen/qwen3.6-27b',
                 messages: [{ role: 'user', content: [{ type: 'text', text: prompt }, { type: 'image_url', image_url: { url: image } }] }],
             }),
+            signal: AbortSignal.timeout(90000),
         });
         const result = await r.json();
         console.log('Vision result:', JSON.stringify(result).substring(0, 500));
