@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Send, Square, Sparkles, Image } from 'lucide-react';
 import { saveDiagnostic, saveAlert, requestNotificationPermission, showPushNotification, analyzeDiagnosticForAlerts } from '../api';
+import { extractFeatures } from '../lib/audioAnalysis';
+import { classifyBehavior, BEHAVIOR_NAMES, BEHAVIOR_EMOJI } from '../lib/beeClassifier';
 
 type Msg = { text: string; isUser: boolean };
 
@@ -161,28 +163,71 @@ export const AnalysisPanel: React.FC = () => {
         try {
             setAnalyzing('audio');
 
-            const samples = freqSamplesRef.current;
-            let avgBands = [0, 0, 0, 0, 0, 0];
-            if (samples.length > 0) {
-                for (const s of samples) {
-                    for (let i = 0; i < 6; i++) avgBands[i] += s[i];
-                }
-                avgBands = avgBands.map(v => Math.round(v / samples.length));
-            }
+            // Decode audio blob to raw PCM
+            const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const arrayBuffer = await blob.arrayBuffer();
+            const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+            const rawSamples = audioBuffer.getChannelData(0);
+            const sampleRate = audioBuffer.sampleRate;
+            audioCtx.close();
 
-            const durationSec = Math.round((Date.now() - startTimeRef.current) / 1000);
-            const bandLabels = [
-                'Atividade normal (50-150Hz)',
-                'Operárias (150-350Hz)',
-                'Rainha tooting (350-500Hz)',
-                'Rainha ausente (500-1000Hz)',
-                'Stress/Piping (1000-3000Hz)',
-                'Harmónicos altos (3000-8000Hz)',
-            ];
-            const freqSummary = bandLabels.map((l, i) => `${l}: ${avgBands[i]}/255`).join('\n');
+            // Extract real features with FFT, MFCC, spectral analysis
+            const features = extractFeatures(rawSamples, sampleRate);
 
-            const buffer = await blob.arrayBuffer();
-            const bytes = new Uint8Array(buffer);
+            // Classify behavior using scientific acoustic signatures
+            const classification = classifyBehavior(features);
+
+            const durationSec = Math.round(features.duration);
+
+            // Build detailed feature summary for LLM
+            const featureSummary = `
+DADOS ACÚSTICOS EXTRAÍDOS (FFT 2048, MFCC, Spectral Analysis):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🐝 CLASSIFICAÇÃO AUTOMÁTICA: ${BEHAVIOR_EMOJI[classification.behavior]} ${BEHAVIOR_NAMES[classification.behavior]}
+Confiança: ${(classification.confidence * 100).toFixed(1)}%
+${classification.secondaryBehavior ? `Comportamento secundário: ${BEHAVIOR_EMOJI[classification.secondaryBehavior]} ${BEHAVIOR_NAMES[classification.secondaryBehavior]} (${(classification.secondaryConfidence * 100).toFixed(1)}%)` : ''}
+
+📊 ESPECTRO DE FREQUÊNCIA (bandas normalizadas 0-255):
+  [${'█'.repeat(Math.round(features.bands.low50_150 / 25))}${'░'.repeat(10 - Math.round(features.bands.low50_150 / 25))}] Atividade normal (50-150Hz): ${features.bands.low50_150}/255
+  [${'█'.repeat(Math.round(features.bands.mid150_350 / 25))}${'░'.repeat(10 - Math.round(features.bands.mid150_350 / 25))}] Operárias (150-350Hz): ${features.bands.mid150_350}/255
+  [${'█'.repeat(Math.round(features.bands.queen350_500 / 25))}${'░'.repeat(10 - Math.round(features.bands.queen350_500 / 25))}] Rainha (350-500Hz): ${features.bands.queen350_500}/255
+  [${'█'.repeat(Math.round(features.bands.absent500_1000 / 25))}${'░'.repeat(10 - Math.round(features.bands.absent500_1000 / 25))}] Rainha ausente (500-1000Hz): ${features.bands.absent500_1000}/255
+  [${'█'.repeat(Math.round(features.bands.stress1000_3000 / 25))}${'░'.repeat(10 - Math.round(features.bands.stress1000_3000 / 25))}] Stress/Piping (1000-3000Hz): ${features.bands.stress1000_3000}/255
+  [${'█'.repeat(Math.round(features.bands.harmonic3000_8000 / 25))}${'░'.repeat(10 - Math.round(features.bands.harmonic3000_8000 / 25))}] Harmónicos (3000-8000Hz): ${features.bands.harmonic3000_8000}/255
+
+📈 FEATURES ESPECTRAIS:
+  - Centróide espectral: ${features.spectralCentroid.toFixed(1)} Hz (frequência média dominante)
+  - Largura de banda espectral: ${features.spectralBandwidth.toFixed(1)} Hz (dispersão)
+  - Rolloff espectral (85%): ${features.spectralRolloff.toFixed(1)} Hz
+  - Flatness espectral: ${features.spectralFlatness.toFixed(4)} (0=tonal, 1=ruído)
+  - Fluxo espectral: ${features.spectralFlux.toFixed(4)} (mudança temporal)
+
+⏱️ CARACTERÍSTICAS TEMPORAIS:
+  - RMS Energy: ${features.rmsEnergy.toFixed(4)} (volume geral)
+  - Pico: ${features.peakAmplitude.toFixed(4)}
+  - Zero Crossing Rate: ${features.zeroCrossingRate.toFixed(4)} (complexidade do sinal)
+  - Crest Factor: ${features.crestFactor.toFixed(2)} (picos vs média)
+  - Tempo de ataque: ${features.attackTime.toFixed(3)}s
+  - Nível de sustain: ${features.sustainLevel.toFixed(3)}
+
+🎵 MFCC (13 coeficientes — assinatura sonora):
+  [${features.mfcc.map(v => v.toFixed(2)).join(', ')}]
+
+🥁 RITMO E MODULAÇÃO:
+  - BPM detectado: ${features.bpm} (confiança: ${(features.beatConfidence * 100).toFixed(0)}%)
+  - Taxa de modulação: ${features.modulationRate.toFixed(2)} Hz (movimento das abelhas)
+  - Profundidade de modulação: ${features.modulationDepth.toFixed(3)} (amplitude do sinal)
+
+🔬 INDICADORES DO CLASSIFICADOR:
+${classification.indicators.map(i => `  • ${i}`).join('\n')}
+
+📚 NOTAS CIENTÍFICAS:
+${classification.scientificNotes.map(n => `  ${n}`).join('\n')}
+`;
+
+            // Transcribe audio
+            const bytes = new Uint8Array(arrayBuffer);
             let base64 = '';
             const chunkSize = 8192;
             for (let i = 0; i < bytes.length; i += chunkSize) {
@@ -196,6 +241,7 @@ export const AnalysisPanel: React.FC = () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ audioBase64: base64, mime: blob.type || 'audio/webm' }),
+                    signal: AbortSignal.timeout(60000),
                 });
                 const tData = await tRes.json();
                 transcription = tData.text || '';
@@ -203,34 +249,41 @@ export const AnalysisPanel: React.FC = () => {
                 transcription = '(transcrição indisponível)';
             }
 
+            // Build LLM prompt with real features
             const diagnosis = await callChat([
                 {
                     role: 'system',
                     content:
-                        'És o Dr. Abelha — o maior especialista mundial em bioacústica apícola. Tens 40 anos de experiência. Recebes dados de gravação de áudio de colmeias.\n\n' +
+                        'És o Dr. Abelha — o maior especialista mundial em bioacústica apícola. Tens 40 anos de experiência.\n\n' +
                         'IMPORTANTE: NAO uses asteriscos, markdown ou negrito. Responde em texto simples com emojis e secções.\n\n' +
-                        'DADOS DISPONÍVEIS:\n' +
-                        '1. TRANSCRIÇÃO do áudio (Whisper)\n' +
-                        '2. ESPECTRO DE FREQUÊNCIA (6 bandas com valores 0-255)\n\n' +
+                        'Recebes dados EXTRAÍDOS DE ANÁLISE REAL de áudio de colmeias, incluindo:\n' +
+                        '- FFT com janela de Hamming (2048 pontos)\n' +
+                        '- 13 coeficientes MFCC (assinatura sonora)\n' +
+                        '- Features espectrais: centroid, bandwidth, rolloff, flatness, flux\n' +
+                        '- Classificação automática do comportamento (com confiança)\n' +
+                        '- Detecção de BPM e modulação de amplitude\n\n' +
                         'FORMATO DE RESPOSTA (OBRIGATÓRIO — usa EXATAMENTE esta estrutura com emojis e secções):\n\n' +
                         '🐝 RELATÓRIO DE DIAGNÓSTICO APÍCOLA\n' +
                         '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n' +
                         '📋 RESUMO EXECUTIVO\n' +
                         '(1-2 frases com o veredicto principal)\n\n' +
-                        '📊 ANÁLISE ESPECTRAL DE FREQUÊNCIA\n' +
+                        '📊 CLASSIFICAÇÃO ACÚSTICA\n' +
+                        'Mostra a classificação automática e a confiança\n\n' +
+                        '📈 ANÁLISE ESPECTRAL\n' +
                         'Para cada banda, mostra um gráfico em texto tipo barra:\n' +
                         '  [████████░░] Atividade normal (50-150Hz): XX/255\n' +
                         '  [██████░░░░] Operárias (150-350Hz): XX/255\n' +
-                        '  [████░░░░░░] Rainha tooting (350-500Hz): XX/255\n' +
+                        '  [████░░░░░░] Rainha (350-500Hz): XX/255\n' +
                         '  [██░░░░░░░░] Rainha ausente (500-1000Hz): XX/255\n' +
                         '  [█░░░░░░░░░] Stress/Piping (1000-3000Hz): XX/255\n' +
-                        '  [░░░░░░░░░░] Harmónicos altos (3000-8000Hz): XX/255\n\n' +
+                        '  [░░░░░░░░░░] Harmónicos (3000-8000Hz): XX/255\n\n' +
                         '  Legenda: █ = 25 cada, ░ = espaço vazio\n\n' +
                         '🔍 DETALHES DA ANÁLISE\n' +
                         '• Transcrição detetada: (o que foi ouvido)\n' +
-                        '• Tipo de som: (abelhas/voz humana/ruído/outro)\n' +
-                        '• Padrão acústico: (zumbido constante/piping/tooting/silêncio/aleatório)\n' +
-                        '• Intensidade geral: (Crítico/Baixo/Moderado/Alto/Muito Alto)\n\n' +
+                        '• Centróide espectral: (frequência média dominante)\n' +
+                        '• Flatness: (0=tonal puro, 1=ruído branco)\n' +
+                        '• Modulação: (taxa e profundidade)\n' +
+                        '• Padrão acústico: (descrever)\n\n' +
                         '👑 ESTADO DA RAINHA\n' +
                         '• Probabilidade de presença: XX%\n' +
                         '• Indicadores: (evidência acústica)\n' +
@@ -248,13 +301,13 @@ export const AnalysisPanel: React.FC = () => {
                         'Mostra uma barra: [████████░░] XX/100\n' +
                         'Classificação: (Crítico / Fraco / Razoável / Bom / Excelente)\n\n' +
                         'VALORES DE REFERÊNCIA:\n' +
-                        '- Colmeia saudável ativa: 100-200/255 em 50-350Hz\n' +
-                        '- Rainha tooting: pico 350-500Hz (25-80/255)\n' +
-                        '- Rainha ausente: pico 478-1080Hz\n' +
-                        '- Silêncio/sem abelhas: < 30/255 em todas\n' +
-                        '- Voz humana: 150-1000Hz com valores altos\n' +
-                        '- Palmas: pico 1000-8000Hz\n' +
-                        '- Piping de rainha: 260-500Hz em pulsos curtos\n\n' +
+                        '- Colmeia saudável ativa: RMS > 0.005, centroid 100-500Hz, flatness < 0.3\n' +
+                        '- Rainha piping: centroid 200-700Hz, modulação 2-12Hz, flux > 0.01\n' +
+                        '- Rainha ausente: centroid > 300Hz, banda 500-1000Hz elevada\n' +
+                        '- Swarming: modulação 10-35Hz, banda 250-500Hz elevada\n' +
+                        '- Stress: centroid > 400Hz, flatness > 0.15, ZCR > 0.02\n' +
+                        '- Silêncio: RMS < 0.002, todas bandas < 30/255\n' +
+                        '- Voz humana: flatness > 0.2, ZCR > 0.04, bandwidth > 200Hz\n\n' +
                         'IMPORTANTE: Se o áudio NÃO são abelhas, indica isso na análise sem inventar diagnóstico apícola.\n' +
                         'NÃO uses asteriscos (*) em lado nenhum da resposta.',
                 },
@@ -263,12 +316,12 @@ export const AnalysisPanel: React.FC = () => {
                     content:
                         `GRAVAÇÃO DE ÁUDIO (${durationSec}s)\n\n` +
                         `--- TRANSCRIÇÃO ---\n${transcription || '(sem transcrição - apenas sons não verbais)'}\n\n` +
-                        `--- DADOS DE FREQUÊNCIA ---\n${freqSummary}\n\n` +
-                        `--- ANÁLISE ---\nBaseado na transcrição e nos dados de frequência, diagnostica o que foi gravado.`,
+                        `${featureSummary}\n` +
+                        `--- ANÁLISE ---\nBaseado nos dados acústicos extraídos e na classificação automática, diagnostica o estado da colmeia.`,
                 },
             ]);
             setMessages((prev) => [...prev, { text: `🔊 Diagnóstico por áudio:\n\n${diagnosis}`, isUser: false }]);
-            const diag = await saveDiagnostic({ type: 'audio', input: freqSummary + '\n\nTranscrição: ' + transcription, result: diagnosis });
+            const diag = await saveDiagnostic({ type: 'audio', input: featureSummary + '\n\nTranscrição: ' + transcription, result: diagnosis });
 
             const alerts = analyzeDiagnosticForAlerts(diagnosis, 'audio');
             for (const a of alerts) {
