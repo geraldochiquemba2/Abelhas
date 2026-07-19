@@ -335,7 +335,7 @@ export const BeeRadar: React.FC = () => {
     const [data, setData] = useState<BeeDataResponse | null>(null);
     const [connected, setConnected] = useState(false);
     const [energyHistory, setEnergyHistory] = useState<number[]>([]);
-    const [radarState, setRadarState] = useState<'idle' | 'starting' | 'calibrating' | 'running' | 'error'>('idle');
+    const [radarState, setRadarState] = useState<'idle' | 'starting' | 'calibrating' | 'running' | 'error' | 'unavailable'>('idle');
     const [radarLog, setRadarLog] = useState('');
     const energyCanvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -376,8 +376,15 @@ export const BeeRadar: React.FC = () => {
         try {
             const res = await fetch('/api/radar/start', { method: 'POST' });
             const d = await res.json();
-            setRadarState(d.status === 'started' || d.status === 'running' ? 'calibrating' : 'error');
-            if (d.status !== 'started') setRadarLog(d.message || 'Erro');
+            if (d.status === 'unavailable') {
+                setRadarState('unavailable');
+                setRadarLog(d.message);
+            } else if (d.status === 'started' || d.status === 'running') {
+                setRadarState('calibrating');
+            } else {
+                setRadarState('error');
+                setRadarLog(d.message || 'Erro');
+            }
         } catch { setRadarState('error'); }
     };
 
@@ -442,7 +449,12 @@ export const BeeRadar: React.FC = () => {
                     </div>
                 </div>
 
-                {radarActive ? (
+                {radarState === 'unavailable' ? (
+                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-center">
+                        <p className="text-xs font-bold text-amber-700 mb-1">WiFi radar indisponível no servidor cloud</p>
+                        <p className="text-[10px] text-amber-600">Execute a aplicação localmente no seu PC para detectar perturbações via WiFi.</p>
+                    </div>
+                ) : radarActive ? (
                     <button onClick={stopRadar}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-600 text-white font-black text-xs uppercase tracking-widest shadow-lg shadow-red-600/30 mb-4">
                         <WifiOff className="w-4 h-4" /> Parar Radar

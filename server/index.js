@@ -78,7 +78,7 @@ function scanNetworks() {
             windowsHide: true,
             stdio: ['pipe', 'pipe', 'pipe'],
         });
-        if (result.status !== 0) return {};
+        if (result.status !== 0 || !result.stdout) return {};
         const output = result.stdout || '';
         const networks = {};
         let currentSsid = null;
@@ -107,6 +107,8 @@ function scanNetworks() {
         return {};
     }
 }
+
+const isCloud = process.platform !== 'win32' || !fs.existsSync('C:\\Windows\\System32\\netsh.exe');
 
 // Wiener filter per-SSID
 class WienerFilter {
@@ -342,6 +344,9 @@ function stopRadarLoop() {
 }
 
 app.post('/api/radar/start', (_req, res) => {
+    if (isCloud) {
+        return res.json({ status: 'unavailable', message: 'WiFi radar indisponível no servidor cloud. Execute localmente para detectar perturbações via WiFi.' });
+    }
     if (radarStatus === 'running' || radarStatus === 'calibrating') {
         return res.json({ status: radarStatus, message: 'Radar já está activo' });
     }
