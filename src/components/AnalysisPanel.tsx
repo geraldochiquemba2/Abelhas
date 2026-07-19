@@ -182,7 +182,13 @@ export const AnalysisPanel: React.FC = () => {
             const freqSummary = bandLabels.map((l, i) => `${l}: ${avgBands[i]}/255`).join('\n');
 
             const buffer = await blob.arrayBuffer();
-            const base64 = btoa(String.fromCharCode(...new Uint8Array(buffer)));
+            const bytes = new Uint8Array(buffer);
+            let base64 = '';
+            const chunkSize = 8192;
+            for (let i = 0; i < bytes.length; i += chunkSize) {
+                base64 += String.fromCharCode(...bytes.slice(i, i + chunkSize));
+            }
+            base64 = btoa(base64);
 
             let transcription = '';
             try {
