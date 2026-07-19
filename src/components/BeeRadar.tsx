@@ -459,19 +459,43 @@ export const BeeRadar: React.FC = () => {
                     </div>
                 ) : radarState === 'remote' ? (
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-                        <p className="text-xs font-bold text-blue-700 mb-2 text-center">📡 Modo Remoto — Envie dados do seu PC</p>
-                        <div className="bg-black/80 rounded-xl p-3 mb-2">
-                            <code className="text-green-400 text-[10px] font-mono break-all">
-                                python bee-radar.py --server https://colmeiasaudavel.onrender.com
-                            </code>
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                            <p className="text-xs font-bold text-blue-700">Modo Remoto Activado</p>
                         </div>
-                        <p className="text-[10px] text-blue-600 text-center mb-2">Execute este comando no seu PC com WiFi. Os dados vão aparecer aqui em tempo real.</p>
-                        {current && (
-                            <p className="text-[10px] text-green-600 text-center font-bold">✓ Dados recebidos — radar activo!</p>
+                        <div className="bg-white/80 rounded-xl p-3 mb-3">
+                            <p className="text-[10px] font-bold text-slate-600 mb-1">1. Instale o scanner perto da colmeia:</p>
+                            <div className="bg-black/80 rounded-lg p-2 flex items-center justify-between">
+                                <code className="text-green-400 text-[10px] font-mono break-all flex-1">
+                                    python bee-radar.py --server https://colmeiasaudavel.onrender.com
+                                </code>
+                            </div>
+                        </div>
+                        <div className="bg-white/80 rounded-xl p-3 mb-3">
+                            <p className="text-[10px] font-bold text-slate-600 mb-1">2. Funciona em qualquer dispositivo:</p>
+                            <ul className="text-[10px] text-slate-500 space-y-0.5 ml-3">
+                                <li>• Raspberry Pi perto da colmeia</li>
+                                <li>• Laptop com WiFi ligado</li>
+                                <li>• Qualquer PC com Python</li>
+                            </ul>
+                        </div>
+                        {current ? (
+                            <div className="bg-green-50 rounded-xl p-3 text-center">
+                                <p className="text-[10px] font-bold text-green-700">✓ Dados a receber em tempo real!</p>
+                                <p className="text-[9px] text-green-600">{current.networks_count} redes • {current.time}</p>
+                            </div>
+                        ) : (
+                            <div className="bg-amber-50 rounded-xl p-3 text-center">
+                                <div className="flex items-center justify-center gap-2">
+                                    <div className="w-3 h-3 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                                    <p className="text-[10px] font-bold text-amber-700">A aguardar dados do scanner...</p>
+                                </div>
+                                <p className="text-[9px] text-amber-600 mt-1">Execute o comando acima num dispositivo perto da colmeia</p>
+                            </div>
                         )}
                         <button onClick={() => { setRadarState('idle'); }}
-                            className="w-full mt-2 px-4 py-2 rounded-lg bg-blue-100 text-blue-700 text-[10px] font-bold">
-                            Fechar instruções
+                            className="w-full mt-3 px-4 py-2 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-bold hover:bg-slate-200">
+                            Voltar
                         </button>
                     </div>
                 ) : radarActive ? (
