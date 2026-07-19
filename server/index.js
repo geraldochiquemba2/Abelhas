@@ -41,6 +41,7 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
 
 let latestBeeData = null;
 const beeDataHistory = [];
+const phoneSignals = {};
 
 app.post('/api/beedata', (req, res) => {
     try {
@@ -53,6 +54,91 @@ app.post('/api/beedata', (req, res) => {
     } catch (e) {
         res.status(500).json({ error: e.message });
     }
+});
+
+app.post('/api/signal', (req, res) => {
+    try {
+        const { deviceId, rtt, downlink, effectiveType, timestamp, ssid } = req.body || {};
+        if (!deviceId) return res.status(400).json({ error: 'deviceId obrigatório' });
+
+        if (!phoneSignals[deviceId]) {
+            phoneSignals[deviceId] = { readings: [], lastActivity: null, ssid: ssid || 'unknown' };
+        }
+        const ps = phoneSignals[deviceId];
+        ps.readings.push({ rtt, downlink, effectiveType, timestamp: timestamp || Date.now() });
+        if (ps.readings.length > 120) ps.readings.shift();
+        ps.lastActivity = Date.now();
+        ps.ssid = ssid || ps.ssid;
+
+        const readings = ps.readings;
+        if (readings.length >= 3) {
+            const recent = readings.slice(-10);
+            const rttValues = recent.map(r => r.rtt).filter(r => r != null);
+            const meanRtt = rttValues.reduce((a, b) => a + b, 0) / rttValues.length;
+            const variance = rttValues.reduce((a, b) => a + Math.pow(b - meanRtt, 2), 0) / rttValues.length;
+            const std = Math.sqrt(variance);
+
+            const prev = readings.slice(-10, -5);
+            const prevRtt = prev.map(r => r.rtt).filter(r => r != null);
+            const prevMean = prevRtt.length > 0 ? prevRtt.reduce((a, b) => a + b, 0) / prevRtt.length : meanRtt;
+            const direction = meanRtt - prevMean;
+
+            const change = Math.abs(direction);
+            const isSignificant = change > std * 0.5 || change > 5;
+
+            const targets = Object.entries(phoneSignals).map(([id, ps2]) => {
+                const r2 = ps2.readings.slice(-10);
+                const rtt2 = r2.map(r => r.rtt).filter(r => r != null);
+                const m2 = rtt2.length > 0 ? rtt2.reduce((a, b) => a + b, 0) / rtt2.length : 0;
+                const p2 = ps2.readings.slice(-10, -5);
+                const pRtt2 = p2.map(r => r.rtt).filter(r => r != null);
+                const pM2 = pRtt2.length > 0 ? pRtt2.reduce((a, b) => a + b, 0) / pRtt2.length : m2;
+                return {
+                    ssid: ps2.ssid || id.slice(0, 8),
+                    signal: Math.round(m2),
+                    change: Math.round((m2 - pM2) * 100) / 100,
+                    absChange: Math.round(Math.abs(m2 - pM2) * 100) / 100,
+                    direction: Math.round((m2 - pM2) * 100) / 100,
+                    speed: Math.round(Math.abs(m2 - pM2) * 100) / 100,
+                    variance: Math.round(variance * 1000) / 1000,
+                    isMoving: Math.abs(m2 - pM2) > 2,
+                    baseline: Math.round(prevMean * 10) / 10,
+                };
+            });
+
+            latestBeeData = {
+                time: new Date().toLocaleTimeString('pt-AO'),
+                ts: Date.now(),
+                changes: { [ps.ssid]: Math.round((meanRtt - prevMean) * 100) / 100 },
+                significant: isSignificant ? 1 : 0,
+                total_energy: Math.round(change / 10 * 1000) / 1000,
+                raw_energy: Math.round(change * 100) / 100,
+                bee_activity: change > 15 ? 3 : change > 8 ? 2 : change > 3 ? 1 : 0,
+                possible_bees: change > 3 ? 1 : 0,
+                detection_state: change > 10 ? 2 : change > 5 ? 1 : 0,
+                details: isSignificant ? [{ ssid: ps.ssid, change: Math.round((meanRtt - prevMean) * 100) / 100, abs: Math.round(change * 100) / 100 }] : [],
+                filters: { [ps.ssid]: { raw: Math.round(meanRtt), filtered: Math.round(meanRtt), threshold: 2, noise: Math.round(std * 100) / 100, variance: Math.round(variance * 1000) / 1000 } },
+                targets,
+                networks_count: Object.keys(phoneSignals).length,
+                network_names: Object.keys(phoneSignals).map(id => phoneSignals[id].ssid || id.slice(0, 8)),
+                received_at: new Date().toISOString(),
+            };
+            beeDataHistory.unshift(latestBeeData);
+            if (beeDataHistory.length > 500) beeDataHistory.length = 500;
+        }
+
+        res.json({ ok: true, readings: ps.readings.length });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+app.get('/api/signal/status', (_req, res) => {
+    const active = Object.entries(phoneSignals).filter(([_, ps]) => Date.now() - ps.lastActivity < 10000);
+    res.json({
+        devices: active.length,
+        list: active.map(([id, ps]) => ({ id: id.slice(0, 8), ssid: ps.ssid, readings: ps.readings.length })),
+    });
 });
 
 app.get('/api/beedata', (_req, res) => {

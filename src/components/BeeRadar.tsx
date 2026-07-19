@@ -338,6 +338,8 @@ export const BeeRadar: React.FC = () => {
     const [radarState, setRadarState] = useState<'idle' | 'starting' | 'calibrating' | 'running' | 'error' | 'unavailable' | 'remote'>('idle');
     const [radarLog, setRadarLog] = useState('');
     const energyCanvasRef = useRef<HTMLCanvasElement>(null);
+    const signalIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const deviceIdRef = useRef('dev_' + Math.random().toString(36).slice(2, 10));
 
     useEffect(() => {
         const fetchData = async () => {
@@ -371,6 +373,37 @@ export const BeeRadar: React.FC = () => {
         return () => { clearInterval(interval); clearInterval(radarInterval); };
     }, []);
 
+    // Browser WiFi signal measurement (cloud mode)
+    useEffect(() => {
+        if (radarState !== 'remote') {
+            if (signalIntervalRef.current) { clearInterval(signalIntervalRef.current); signalIntervalRef.current = null; }
+            return;
+        }
+        const measure = async () => {
+            try {
+                const start = performance.now();
+                await fetch('/api/health');
+                const rtt = performance.now() - start;
+                const conn = (navigator as any).connection;
+                await fetch('/api/signal', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        deviceId: deviceIdRef.current,
+                        rtt: Math.round(rtt),
+                        downlink: conn?.downlink || 0,
+                        effectiveType: conn?.effectiveType || 'unknown',
+                        ssid: 'browser-wifi',
+                        timestamp: Date.now(),
+                    }),
+                });
+            } catch {}
+        };
+        measure();
+        signalIntervalRef.current = setInterval(measure, 1500);
+        return () => { if (signalIntervalRef.current) clearInterval(signalIntervalRef.current); };
+    }, [radarState]);
+
     const startRadar = async () => {
         setRadarState('starting');
         try {
@@ -381,7 +414,6 @@ export const BeeRadar: React.FC = () => {
                 setRadarLog(d.message);
             } else if (d.status === 'remote') {
                 setRadarState('remote');
-                setRadarLog(d.message);
             } else if (d.status === 'started' || d.status === 'running') {
                 setRadarState('calibrating');
             } else {
@@ -458,45 +490,12 @@ export const BeeRadar: React.FC = () => {
                         <p className="text-[10px] text-amber-600">Execute a aplicação localmente no seu PC para detectar perturbações via WiFi.</p>
                     </div>
                 ) : radarState === 'remote' ? (
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
-                        <div className="flex items-center gap-2 mb-3">
-                            <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                            <p className="text-xs font-bold text-blue-700">Modo Remoto Activado</p>
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 mb-4">
+                        <div className="flex items-center justify gap-2">
+                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                            <p className="text-[10px] font-bold text-blue-700">A medir qualidade WiFi do seu dispositivo em tempo real</p>
                         </div>
-                        <div className="bg-white/80 rounded-xl p-3 mb-3">
-                            <p className="text-[10px] font-bold text-slate-600 mb-1">1. Instale o scanner perto da colmeia:</p>
-                            <div className="bg-black/80 rounded-lg p-2 flex items-center justify-between">
-                                <code className="text-green-400 text-[10px] font-mono break-all flex-1">
-                                    python bee-radar.py --server https://colmeiasaudavel.onrender.com
-                                </code>
-                            </div>
-                        </div>
-                        <div className="bg-white/80 rounded-xl p-3 mb-3">
-                            <p className="text-[10px] font-bold text-slate-600 mb-1">2. Funciona em qualquer dispositivo:</p>
-                            <ul className="text-[10px] text-slate-500 space-y-0.5 ml-3">
-                                <li>• Raspberry Pi perto da colmeia</li>
-                                <li>• Laptop com WiFi ligado</li>
-                                <li>• Qualquer PC com Python</li>
-                            </ul>
-                        </div>
-                        {current ? (
-                            <div className="bg-green-50 rounded-xl p-3 text-center">
-                                <p className="text-[10px] font-bold text-green-700">✓ Dados a receber em tempo real!</p>
-                                <p className="text-[9px] text-green-600">{current.networks_count} redes • {current.time}</p>
-                            </div>
-                        ) : (
-                            <div className="bg-amber-50 rounded-xl p-3 text-center">
-                                <div className="flex items-center justify-center gap-2">
-                                    <div className="w-3 h-3 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
-                                    <p className="text-[10px] font-bold text-amber-700">A aguardar dados do scanner...</p>
-                                </div>
-                                <p className="text-[9px] text-amber-600 mt-1">Execute o comando acima num dispositivo perto da colmeia</p>
-                            </div>
-                        )}
-                        <button onClick={() => { setRadarState('idle'); }}
-                            className="w-full mt-3 px-4 py-2 rounded-lg bg-slate-100 text-slate-600 text-[10px] font-bold hover:bg-slate-200">
-                            Voltar
-                        </button>
+                        <p className="text-[9px] text-blue-500 mt-1">O radar detecta perturbações no sinal WiFi da sua ligação actual</p>
                     </div>
                 ) : radarActive ? (
                     <button onClick={stopRadar}
